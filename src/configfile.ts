@@ -4,61 +4,110 @@ import { Logger } from "./Logger";
 interface IConfigFile
 {
     discordToken: string,
+    videoMaxDuration: number,
+    playListMaxSize: number,
+    playListMaxDuration: number,
 }
 
-const DEFAULTS: IConfigFile = {
+const data: IConfigFile = {
     discordToken: "",
+    videoMaxDuration: 3600 * 5,
+    playListMaxSize: 50,
+    playListMaxDuration: 3600 * 5
 }
 
-const FILENAME = "config.json";
+const fileName = "config.json";
+const logger = new Logger("Configfile");
+let loaded = false;
 
-let data: IConfigFile | undefined;
-
+/**
+ * Write config file.
+ */
 function safeConfigFile()
 {
-    if (!data) throw new Error("Config data doesn't exist!");
-    writeFileSync(FILENAME, JSON.stringify(data, null, 4));
+    writeFileSync(fileName, JSON.stringify(data, null, 4));
 }
 
-function loadConfigFile()
+/**
+ * Read config file. Ends process if file can't be read or parsed for whatever reason.
+ * @returns 
+ */
+function readConfigFile()
 {
-    const logger = new Logger("Configfile");
-
-    if (!existsSync(FILENAME))
-    {
-        data = DEFAULTS;
-        safeConfigFile();
-        logger.log("Config file (" + FILENAME + ") created! Edit settings and start again.");
-        process.exit(0);
-    }
-
     try
     {
-        data = JSON.parse(readFileSync(FILENAME, "utf-8"));
+        const parsed = JSON.parse(readFileSync(fileName, "utf-8"));
+        if (typeof parsed !== "object")
+        {
+            logger.logError("Config file is malformed!");
+            process.exit(1);
+        }
+        return <{ [index: string]: any }>parsed;
     }
     catch (error)
     {
         logger.logError("Error while reading config file!", error);
         process.exit(1);
     }
+}
 
-    let settingsWereMissing = false;
+/**
+ * Update settings data with file data.
+ * @param fileData 
+ * @returns List of settings that were missing from file data.
+ */
+function updateSettings(fileData: { [index: string]: any })
+{
+    const newSettings: string[] = [];
 
-    for (let setting in DEFAULTS)
+    let setting: keyof IConfigFile;
+    for (setting in data)
     {
-        if (!data![<keyof IConfigFile>setting])
+        const fromFile = fileData[setting];
+        if (fromFile && typeof fromFile === typeof data[setting])
         {
-            data![<keyof IConfigFile>setting] = DEFAULTS[<keyof IConfigFile>setting];
-            settingsWereMissing = true;
+            // @ts-ignore
+            data[setting] = fromFile;
+        }
+        else
+        {
+            newSettings.push(setting);
         }
     }
 
-    if (settingsWereMissing)
+    return newSettings;
+}
+
+/**
+ * Attempt to load config data from file. Process will end if data is missing or can't be read.
+ */
+function loadConfigData()
+{
+    logger.log("Trying to load file (" + fileName + ")...");
+
+    if (!existsSync(fileName))
     {
         safeConfigFile();
-        logger.log("One or more new settings were added to config file (" + FILENAME + "). Edit settings and start again.");
+        logger.log("New config file created! Edit settings and start again.");
         process.exit(0);
     }
+
+    const newSettings = updateSettings(readConfigFile());
+
+    if (newSettings.length > 0)
+    {
+        safeConfigFile();
+        logger.log(`Following ${newSettings.length} new settings were added to config file (" + FILENAME + "):`);
+        for (const setting of newSettings)
+        {
+            logger.log(setting);
+        }
+        logger.log("Adjust these settings if needed and start again.");
+        process.exit(0);
+    }
+
+    loaded = true;
+    logger.log("Config data loaded.");
 }
 
 /**
@@ -67,6 +116,6 @@ function loadConfigFile()
  */
 export function getConfig()
 {
-    if (!data) loadConfigFile();
+    if (!loaded) loadConfigData();
     return <Readonly<IConfigFile>>data;
 }
