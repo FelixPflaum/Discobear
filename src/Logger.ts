@@ -24,7 +24,7 @@ export class Logger
     private writeToStream(str: string)
     {
         if (!Logger.ws) Logger.ws = fs.createWriteStream(LOG_FILE_NAME, { flags: "a" });
-        Logger.ws.write(str + "\n");
+        Logger.ws.write(str);
     }
 
     log(msg: string)
