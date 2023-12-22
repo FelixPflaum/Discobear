@@ -26,6 +26,14 @@ export abstract class BotCommandBase
         this.commandBuilder.setDefaultMemberPermissions(permissions.bitfield);
     }
 
+    protected addStringOption(name: string, description: string, required = false)
+    {
+        this.commandBuilder.addStringOption(opt => opt
+            .setName(name.toLowerCase())
+            .setDescription(description.trim())
+            .setRequired(required));
+    }
+
     /**
      * Get JSON payload for REST API.
      */
@@ -34,5 +42,5 @@ export abstract class BotCommandBase
         return this.commandBuilder.toJSON();
     }
 
-    abstract execute(interaction: ChatInputCommandInteraction): void
+    abstract execute(interaction: ChatInputCommandInteraction): void | Promise<void>
 }
