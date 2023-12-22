@@ -1,6 +1,7 @@
 import { Client, GatewayIntentBits, Guild, REST, RESTPostAPIChatInputApplicationCommandsJSONBody, Routes } from "discord.js";
 import { Logger } from "../Logger";
 import { BotCommandBase } from "./BotCommandBase";
+import { VoiceManager } from "./VoiceManager";
 
 export class Discordbot
 {
@@ -8,6 +9,7 @@ export class Discordbot
     private readonly client: Client;
     private readonly logger: Logger;
     private readonly commands: Map<string, BotCommandBase>;
+    readonly voiceManager: VoiceManager;
 
     constructor(token: string)
     {
@@ -15,9 +17,9 @@ export class Discordbot
         this.logger = new Logger("Discordbot");
         this.commands = new Map<string, BotCommandBase>();
 
-        this.client = new Client({
-            intents: [GatewayIntentBits.Guilds]
-        });
+        this.client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates] });
+
+        this.voiceManager = new VoiceManager(this.client);
 
         this.client.on("ready", () =>
         {
@@ -100,6 +102,7 @@ export class Discordbot
      */
     disconnect()
     {
+        this.voiceManager.destroy();
         return this.client.destroy();
     }
 }

@@ -1,6 +1,6 @@
 import { Discordbot } from "./src/Discordbot/Discordbot";
 import { Logger } from "./src/Logger";
-import { TestCommand } from "./src/commands/TestCommand";
+import { PlayCommand } from "./src/commands/PlayCommand";
 import { getConfig } from "./src/configfile";
 
 const log = new Logger("App");
@@ -14,9 +14,7 @@ async function start()
 
     const cfg = getConfig();
     bot = new Discordbot(cfg.discordToken);
-
-    bot.registerCommand(new TestCommand());
-
+    bot.registerCommand(new PlayCommand(bot.voiceManager));
     await bot.connect();
 
     log.log("Discobear ready.");
