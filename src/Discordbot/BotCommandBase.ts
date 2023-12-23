@@ -96,14 +96,14 @@ export abstract class BotCommandBase
     }
 
     /**
-     * Same as interactionReply() but prepends 👍, wow!
+     * Same as interactionReply() but prepends 🐻, wow!
      * @param interaction 
      * @param msg 
      * @returns 
      */
     protected replySuccess(interaction: ChatInputCommandInteraction, msg: string)
     {
-        return this.interactionReply(interaction, "👍 " + msg);
+        return this.interactionReply(interaction, "🐻 " + msg);
     }
 
     /**

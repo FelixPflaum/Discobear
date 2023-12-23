@@ -3,11 +3,12 @@ import
     AudioPlayer, AudioPlayerStatus, NoSubscriberBehavior, VoiceConnectionStatus,
     createAudioPlayer, createAudioResource, entersState, getVoiceConnection, joinVoiceChannel
 } from "@discordjs/voice";
-import { VoiceBasedChannel } from "discord.js";
+import { Embed, EmbedBuilder, MessageCreateOptions, TextBasedChannel, VoiceBasedChannel } from "discord.js";
 import { Logger } from "../Logger";
 import { SongQueue } from "./SongQueue";
 import { Song } from "./Song";
 import { stream } from "play-dl";
+import { buildNowPlayingEmbed } from "./playembed";
 
 const enum LeaveReason
 {
@@ -33,13 +34,40 @@ export class MusicPlayer
     private onDestroyCallbacks: (() => void)[] = [];
     private nowPlaying?: { song: Song, startedAt: number };
     private retryCounter = 0;
+    private textchannel: TextBasedChannel;
 
-    constructor(guildId: string, guildName: string)
+    constructor(guildId: string, guildName: string, textchannel: TextBasedChannel)
     {
         this.logger = new Logger("MusicPlayer|" + guildName);
         this.queue = new SongQueue();
         this.audioPlayer = this.setupAudioPlayer();
         this.guildId = guildId;
+        this.textchannel = textchannel;
+    }
+
+    /**
+     * Send message to text channel if possible. Handles rejections.
+     * @param msg 
+     * @param embeds 
+     * @returns Promise containing the Message if sent successfully.
+     */
+    private async sendText(msg: string, embeds?: (Embed | EmbedBuilder)[])
+    {
+        if (!this.textchannel)
+            return;
+
+        const payload: MessageCreateOptions = { content: msg };
+        if (embeds) payload.embeds = embeds;
+
+        try
+        {
+            return await this.textchannel.send(payload);
+        }
+        catch (error)
+        {
+            this.logger.logError("Failed to send message to text channel!", error);
+            return;
+        }
     }
 
     /**
@@ -53,7 +81,6 @@ export class MusicPlayer
         const player = createAudioPlayer({ behaviors: { noSubscriber: NoSubscriberBehavior.Stop } });
 
         let finished = false;
-        let paused = false;
 
         player.on("error", error =>
         {
@@ -79,17 +106,12 @@ export class MusicPlayer
 
         player.on(AudioPlayerStatus.AutoPaused, () =>
         {
-            paused = true;
+            this.logger.log("Player went into auto pause");
         });
 
         player.on(AudioPlayerStatus.Playing, async () => 
         {
             this.setSelfdestructTimer(LeaveReason.IDLE_TIMEOUT, false);
-            if (paused)
-            {
-                paused = false;
-                return;
-            }
             finished = false;
         });
 
@@ -97,7 +119,6 @@ export class MusicPlayer
         {
             if (finished) return;
             finished = true;
-            paused = false;
             delete this.nowPlaying;
             this.setSelfdestructTimer(LeaveReason.IDLE_TIMEOUT, true);
             this.playNext();
@@ -197,6 +218,7 @@ export class MusicPlayer
         const connection = getVoiceConnection(this.guildId);
         if (!connection)
         {
+            this.sendText("Voice connection lost!");
             this.destroy();
             return;
         }
@@ -209,6 +231,8 @@ export class MusicPlayer
             song: song,
             startedAt: Date.now() / 1000
         }
+
+        this.sendText("", [buildNowPlayingEmbed(song)]);
     }
 
     /**
@@ -218,6 +242,7 @@ export class MusicPlayer
     {
         if (!getVoiceConnection(this.guildId))
         {
+            this.sendText("Voice connection lost!");
             this.destroy();
             return;
         }
@@ -226,6 +251,8 @@ export class MusicPlayer
         const next = this.queue.getNext();
         if (next)
             this.playSong(next);
+        else
+            this.sendText("Nothing left to play, going back to sleep.");
     }
 
     /**

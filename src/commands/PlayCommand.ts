@@ -93,8 +93,9 @@ export class PlayCommand extends BotCommandBase
     {
         const guildId = interaction.guildId;
         const voicechannel = this.getInteractionVoicechannel(interaction);
+        const textchanel = interaction.channel;
 
-        if (!voicechannel || !guildId)
+        if (!voicechannel || !guildId || !textchanel)
         {
             await this.replyError(interaction, "You're not in a voice channel!");
             return;
@@ -116,7 +117,7 @@ export class PlayCommand extends BotCommandBase
 
         await interaction.deferReply();
 
-        const player = await this.voiceManager.joinVoice(voicechannel);
+        const player = await this.voiceManager.joinVoice(voicechannel, textchanel);
         if (!player)
         {
             await this.replyError(interaction, "Couldn't join voice channel!");

@@ -1,4 +1,4 @@
-import { Client, VoiceBasedChannel } from "discord.js";
+import { Client, TextBasedChannel, VoiceBasedChannel } from "discord.js";
 import { MusicPlayer } from "../MusicPlayer/MusicPlayer";
 import { Logger } from "../Logger";
 
@@ -80,7 +80,7 @@ export class VoiceManager
      * @param voicechannel 
      * @returns MusicPlayer instance if connection was successful or player already existed for this channel.
      */
-    async joinVoice(voicechannel: VoiceBasedChannel)
+    async joinVoice(voicechannel: VoiceBasedChannel, textchanel: TextBasedChannel)
     {
         const guildId = voicechannel.guild.id;
 
@@ -89,7 +89,7 @@ export class VoiceManager
 
         this.logger.log(`Adding MusicPlayer for guild ${voicechannel.guild.name} (${guildId}).`);
 
-        const musicplayer = new MusicPlayer(guildId, voicechannel.guild.name);
+        const musicplayer = new MusicPlayer(guildId, voicechannel.guild.name, textchanel);
         this.activePlayers.set(guildId, musicplayer);
 
         musicplayer.onDestroy(() =>
