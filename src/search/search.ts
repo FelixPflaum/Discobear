@@ -64,13 +64,13 @@ export async function processInput(input: string, requester: SearchData["request
                 searchData.message = "Unsupported service!";
                 break;
             case "yt_playlist":
-                yt.handlePlaylist(searchData);
+                await yt.handlePlaylist(searchData);
                 break;
             case "yt_video":
-                yt.handleURL(searchData);
+                await yt.handleURL(searchData);
                 break;
             case "search":
-                yt.handleSearch(searchData);
+                await yt.handleSearch(searchData);
                 break;
             case false:
             default:

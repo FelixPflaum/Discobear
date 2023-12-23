@@ -1,12 +1,15 @@
-import { Client, ChatInputCommandInteraction, VoiceBasedChannel } from "discord.js";
+import { Client, VoiceBasedChannel } from "discord.js";
 import { MusicPlayer } from "../MusicPlayer/MusicPlayer";
+import { Logger } from "../Logger";
 
 export class VoiceManager
 {
     private readonly activePlayers: Map<string, MusicPlayer>;
+    private readonly logger: Logger;
 
     constructor(client: Client)
     {
+        this.logger = new Logger("VoiceManager");
         this.activePlayers = new Map<string, MusicPlayer>();
 
         // Manually track voice channel activity.
@@ -63,42 +66,33 @@ export class VoiceManager
     }
 
     /**
-     * Get voice channel from interaction.
-     * @param interaction 
-     * @returns 
-     */
-    getInteractionVoicechannel(interaction: ChatInputCommandInteraction)
-    {
-        if (!interaction.guild || !interaction.member)
-            return null;
-
-        const guildMember = interaction.guild.members.cache.get(interaction.member.user.id);
-        if (!guildMember)
-            return null;
-
-        return guildMember.voice.channel;
-    }
-
-    /**
-     * Create player for voice channel.
+     * Create player for voice channel and attempt to connect.
      * @param voicechannel 
-     * @returns 
+     * @returns MusicPlayer instance if connection was successful.
      */
-    joinVoice(voicechannel: VoiceBasedChannel)
+    async joinVoice(voicechannel: VoiceBasedChannel)
     {
         const guildId = voicechannel.guild.id;
 
         if (!this.isBotFree(guildId))
             return;
 
-        const musicplayer = new MusicPlayer(voicechannel);
+        this.logger.log(`Adding MusicPlayer for guild ${voicechannel.guild.name} (${guildId}).`);
+
+        const musicplayer = new MusicPlayer(guildId, voicechannel.guild.name);
         this.activePlayers.set(guildId, musicplayer);
 
         musicplayer.onDestroy(() =>
         {
+            this.logger.log(`Removing MusicPlayer for guild ${voicechannel.guild.name} (${guildId}).`);
             this.activePlayers.delete(musicplayer.guildId);
         });
 
+        if (!await musicplayer.connectToVoice(voicechannel))
+        {
+            musicplayer.destroy();
+            return;
+        }
         return musicplayer;
     }
 

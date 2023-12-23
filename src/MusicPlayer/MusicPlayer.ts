@@ -1,8 +1,13 @@
-import { VoiceConnectionStatus, entersState, getVoiceConnection, joinVoiceChannel } from "@discordjs/voice";
+import
+{
+    AudioPlayer, AudioPlayerStatus, NoSubscriberBehavior, VoiceConnectionStatus,
+    createAudioPlayer, createAudioResource, entersState, getVoiceConnection, joinVoiceChannel
+} from "@discordjs/voice";
 import { VoiceBasedChannel } from "discord.js";
 import { Logger } from "../Logger";
 import { SongQueue } from "./SongQueue";
 import { Song } from "./Song";
+import { stream } from "play-dl";
 
 const enum LeaveReason
 {
@@ -23,25 +28,94 @@ export class MusicPlayer
     private readonly logger: Logger;
     private readonly leaveTimer: { [index: string]: NodeJS.Timeout } = {};
     private readonly queue: SongQueue;
+    private readonly audioPlayer: AudioPlayer;
     private voiceChannelId: string | undefined;
     private onDestroyCallbacks: (() => void)[] = [];
-    private nowPlaying: { song: Song, startedAt: number } | undefined;
+    private nowPlaying?: { song: Song, startedAt: number };
+    private retryCounter = 0;
 
-    constructor(voicechannel: VoiceBasedChannel)
+    constructor(guildId: string, guildName: string)
     {
-        this.logger = new Logger("MusicPlayer|" + voicechannel.guild.name);
+        this.logger = new Logger("MusicPlayer|" + guildName);
         this.queue = new SongQueue();
-        this.guildId = voicechannel.guildId;
-        this.updateChannel(voicechannel);
-        this.createConnection(voicechannel);
+        this.audioPlayer = this.setupAudioPlayer();
+        this.guildId = guildId;
+    }
+
+    /**
+     * Create AudioPlayer.
+     */
+    private setupAudioPlayer()
+    {
+        if (this.audioPlayer)
+            return this.audioPlayer;
+
+        const player = createAudioPlayer({ behaviors: { noSubscriber: NoSubscriberBehavior.Stop } });
+
+        let finished = false;
+        let paused = false;
+
+        player.on("error", error =>
+        {
+            this.logger.logError("Player error!", error);
+
+            if (finished) return;
+            finished = true;
+
+            this.retryCounter++;
+            if (this.retryCounter > 2 || !this.nowPlaying)
+            {
+                this.logger.logError("Stream failed and couldn't restart, skipping!", this.nowPlaying?.song.url);
+                this.playNext();
+                return;
+            }
+
+            setTimeout(() =>
+            {
+                if (this.nowPlaying)
+                    this.playSong(this.nowPlaying.song)
+            }, 2500);
+        });
+
+        player.on(AudioPlayerStatus.AutoPaused, () =>
+        {
+            paused = true;
+        });
+
+        player.on(AudioPlayerStatus.Playing, async () => 
+        {
+            this.setSelfdestructTimer(LeaveReason.IDLE_TIMEOUT, false);
+            if (paused)
+            {
+                paused = false;
+                return;
+            }
+            finished = false;
+        });
+
+        player.on(AudioPlayerStatus.Idle, () => 
+        {
+            if (finished) return;
+            finished = true;
+            paused = false;
+            delete this.nowPlaying;
+            this.setSelfdestructTimer(LeaveReason.IDLE_TIMEOUT, true);
+            this.playNext();
+        });
+
+        return player;
     }
 
     /**
      * Create voice connection.
      * @param voicechannel 
+     * @returns True if connection was successfully established in 5s.
      */
-    private createConnection(voicechannel: VoiceBasedChannel)
+    async connectToVoice(voicechannel: VoiceBasedChannel)
     {
+        if (getVoiceConnection(this.guildId))
+            return true
+
         this.logger.log("Creating voice connection.");
 
         const connection = joinVoiceChannel({
@@ -80,6 +154,20 @@ export class MusicPlayer
             this.setSelfdestructTimer(LeaveReason.CONNECTION_TIMEOUT, false);
             this.setSelfdestructTimer(LeaveReason.IDLE_TIMEOUT, true);
         });
+
+        connection.subscribe(this.audioPlayer);
+
+        this.updateChannel(voicechannel);
+
+        try
+        {
+            await entersState(connection, VoiceConnectionStatus.Ready, 5000);
+        }
+        catch (error)
+        {
+            return false;
+        }
+        return true;
     }
 
     /**
@@ -100,20 +188,44 @@ export class MusicPlayer
     }
 
     /**
-     * Play next song from queue.
+     * Play song.
+     * @param song 
+     * @returns 
      */
-    playNext()
+    private async playSong(song: Song)
     {
-        const next = this.queue.getNext();
-
-        if (!next)
+        const connection = getVoiceConnection(this.guildId);
+        if (!connection)
         {
-            // TODO: enter idle?
+            this.destroy();
+            return;
         }
 
-        // TODO: play
+        const playStream = await stream(song.url, { discordPlayerCompatibility: true });
+        const audio = createAudioResource(playStream.stream);
+        this.audioPlayer.play(audio);
 
-        throw new Error("function NYI");
+        this.nowPlaying = {
+            song: song,
+            startedAt: Date.now() / 1000
+        }
+    }
+
+    /**
+     * Play next song if queue isn't empty.
+     */
+    private playNext()
+    {
+        if (!getVoiceConnection(this.guildId))
+        {
+            this.destroy();
+            return;
+        }
+
+        this.retryCounter = 0;
+        const next = this.queue.getNext();
+        if (next)
+            this.playSong(next);
     }
 
     /**
@@ -134,7 +246,7 @@ export class MusicPlayer
         {
             this.queue.add(songOrSongs);
         }
-        
+
         if (!this.nowPlaying)
         {
             this.playNext();
@@ -149,9 +261,8 @@ export class MusicPlayer
      */
     skip()
     {
-        // TODO: stop playback (and trigger next?)
-
-        throw new Error("function NYI");
+        if (this.audioPlayer.state.status !== AudioPlayerStatus.Idle)
+            this.audioPlayer.stop();
     }
 
     /**
@@ -233,7 +344,11 @@ export class MusicPlayer
      */
     updateChannel(voiceChannel: VoiceBasedChannel)
     {
-        this.voiceChannelId = voiceChannel.id;
+        if (this.voiceChannelId != voiceChannel.id)
+        {
+            this.logger.log("Was moved to new channel: " + voiceChannel.name);
+            this.voiceChannelId = voiceChannel.id;
+        }
         this.setSelfdestructTimer(LeaveReason.CHANNEL_EMPTY, voiceChannel.members.size < 2);
     }
 
@@ -248,6 +363,8 @@ export class MusicPlayer
         {
             clearTimeout(this.leaveTimer[reason]);
         }
+
+        this.audioPlayer.stop(true);
 
         getVoiceConnection(this.guildId)?.destroy();
 

@@ -1,14 +1,17 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder, PermissionsBitField } from "discord.js";
+import { Logger } from "../Logger";
 
 export abstract class BotCommandBase
 {
     readonly command: string;
     protected readonly commandBuilder: SlashCommandBuilder;
+    protected readonly logger: Logger;
 
     constructor(command: string, description: string)
     {
         command = command.toLowerCase();
         this.command = command;
+        this.logger = new Logger("Command:" + command);
 
         this.commandBuilder = new SlashCommandBuilder()
             .setName(command)
@@ -54,18 +57,66 @@ export abstract class BotCommandBase
         return this.commandBuilder.toJSON();
     }
 
-    protected replyError(interaction: ChatInputCommandInteraction, msg: string)
+    /**
+     * Reply to interaction. Uses correct function based on whether interaction was deffered before.
+     * Also handles promise rejections. Returned boolean value denotes success.
+     * @param interaction 
+     * @param msg 
+     */
+    protected async interactionReply(interaction: ChatInputCommandInteraction, msg: string)
     {
-        msg = "❌ " + msg;
-        if (interaction.deferred) return interaction.editReply(msg);
-        return interaction.reply(msg);
+        try
+        {
+            if (interaction.deferred)
+                await interaction.editReply(msg);
+            else
+                await interaction.reply(msg);
+        }
+        catch (error)
+        {
+            this.logger.logError("Interaction error!", error);
+            return false;
+        }
+        return true;
     }
 
+    /**
+     * Same as interactionReply() but prepends ❌, wow!
+     * @param interaction 
+     * @param msg 
+     * @returns 
+     */
+    protected replyError(interaction: ChatInputCommandInteraction, msg: string)
+    {
+        return this.interactionReply(interaction, "❌ " + msg);
+    }
+
+    /**
+     * Same as interactionReply() but prepends 👍, wow!
+     * @param interaction 
+     * @param msg 
+     * @returns 
+     */
     protected replySuccess(interaction: ChatInputCommandInteraction, msg: string)
     {
-        msg = "✅ " + msg;
-        if (interaction.deferred) return interaction.editReply(msg);
-        return interaction.reply(msg);
+        return this.interactionReply(interaction, "👍 " + msg);
+    }
+
+    /**
+     * Get voice channel from interaction.
+     * @param interaction 
+     * @returns 
+     */
+    protected getInteractionVoicechannel(interaction: ChatInputCommandInteraction)
+    {
+        if (!interaction.guild || !interaction.member)
+            return null;
+
+        const guildMember = interaction.guild.members.cache.get(interaction.member.user.id);
+        if (!guildMember)
+            return null;
+
+        return guildMember.voice.channel;
     }
 
     abstract execute(interaction: ChatInputCommandInteraction): void | Promise<void>

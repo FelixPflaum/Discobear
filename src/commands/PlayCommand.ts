@@ -1,14 +1,12 @@
 import { ChatInputCommandInteraction, CacheType } from "discord.js";
 import { BotCommandBase } from "../Discordbot/BotCommandBase";
 import { SearchData, processInput } from "../search/search";
-import { Logger } from "../Logger";
 import { VoiceManager } from "../Discordbot/VoiceManager";
 import { MusicPlayer } from "../MusicPlayer/MusicPlayer";
 import { hhmmss } from "../helper";
 
 export class PlayCommand extends BotCommandBase
 {
-    private readonly logger: Logger;
     private readonly voiceManager: VoiceManager;
 
     constructor(voiceManager: VoiceManager)
@@ -16,7 +14,6 @@ export class PlayCommand extends BotCommandBase
         super("play", "Play or queue music.");
         this.voiceManager = voiceManager;
         this.addStringOption("search_or_url", "Search term or video URL.", 4, 250);
-        this.logger = new Logger("PlayCommand");
     }
 
     /**
@@ -95,9 +92,9 @@ export class PlayCommand extends BotCommandBase
     async execute(interaction: ChatInputCommandInteraction<CacheType>)
     {
         // TODO: improve channel checks and player acquisition
-        
+
         const guildId = interaction.guildId;
-        const voicechannel = this.voiceManager.getInteractionVoicechannel(interaction);
+        const voicechannel = this.getInteractionVoicechannel(interaction);
 
         if (!voicechannel || !guildId)
         {
@@ -119,14 +116,14 @@ export class PlayCommand extends BotCommandBase
             return;
         }
 
-        const player = this.voiceManager.joinVoice(voicechannel);
+        await interaction.deferReply();
+
+        const player = await this.voiceManager.joinVoice(voicechannel);
         if (!player)
         {
-            await this.replyError(interaction, "Bot seems to be broken.");
+            await this.replyError(interaction, "Couldn't join voice channel!");
             return;
         }
-
-        await interaction.deferReply();
 
         const searchData = await this.handleSearch(interaction, searchOrURL, player);
 
