@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction, SlashCommandBuilder, PermissionsBitField, Embed, InteractionEditReplyOptions, EmbedBuilder } from "discord.js";
+import { ChatInputCommandInteraction, SlashCommandBuilder, PermissionsBitField, Embed, EmbedBuilder, InteractionReplyOptions } from "discord.js";
 import { Logger } from "../Logger";
 
 export abstract class BotCommandBase
@@ -66,7 +66,7 @@ export abstract class BotCommandBase
      */
     protected async interactionReply(interaction: ChatInputCommandInteraction, msg: string, embeds?: (Embed | EmbedBuilder)[])
     {
-        const payload: InteractionEditReplyOptions = { content: msg };
+        const payload: InteractionReplyOptions = { content: msg };
         if (embeds) payload.embeds = embeds;
 
         try
@@ -74,7 +74,7 @@ export abstract class BotCommandBase
             if (interaction.deferred)
                 await interaction.editReply(payload);
             else
-                await interaction.reply(msg);
+                await interaction.reply(payload);
         }
         catch (error)
         {
