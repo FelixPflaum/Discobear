@@ -11,8 +11,6 @@ let bot: Discordbot | undefined;
 
 async function start()
 {
-    log.log("----------------------------------");
-    log.log("----------------------------------");
     log.log("Starting Discobear...");
 
     const cfg = getConfig();
