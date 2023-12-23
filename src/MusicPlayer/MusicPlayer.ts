@@ -173,12 +173,20 @@ export class MusicPlayer
     }
 
     /**
-     * Get current queue duration.
+     * Get current queue duration. Including currently playing song.
      * @returns 
      */
     getQueueDuration()
     {
-        return this.queue.getDuration();
+        let currentRemaining = 0;
+        if (this.nowPlaying)
+        {
+            const now = Date.now() / 1000;
+            const currentEndsAt = this.nowPlaying.startedAt + this.nowPlaying.song.duration;
+            currentRemaining = Math.max(0, currentEndsAt - now);
+            currentRemaining = Math.round(currentRemaining);
+        }
+        return this.queue.getDuration() + currentRemaining;
     }
 
     /**

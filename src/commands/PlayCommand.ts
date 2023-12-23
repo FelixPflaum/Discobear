@@ -1,8 +1,10 @@
 import { ChatInputCommandInteraction, CacheType } from "discord.js";
 import { BotCommandBase } from "../Discordbot/BotCommandBase";
-import { processInput } from "../searcher";
+import { SearchData, processInput } from "../search/search";
 import { Logger } from "../Logger";
 import { VoiceManager } from "../Discordbot/VoiceManager";
+import { MusicPlayer } from "../MusicPlayer/MusicPlayer";
+import { hhmmss } from "../helper";
 
 export class PlayCommand extends BotCommandBase
 {
@@ -17,8 +19,83 @@ export class PlayCommand extends BotCommandBase
         this.logger = new Logger("PlayCommand");
     }
 
+    /**
+     * Queue single song and set message accordingly in searchData.
+     * @param player 
+     * @param searchData 
+     * @returns 
+     */
+    private handleSingle(player: MusicPlayer, searchData: SearchData): void
+    {
+        const song = searchData.songs[0];
+        if (!song)
+        {
+            searchData.type = "error";
+            searchData.message = "No result!";
+            this.logger.logError("There should never be 0 results at this point in handleSingle()");
+            return;
+        }
+
+        const queueSize = player.getQueueSize();
+        const queueDuration = player.getQueueDuration();
+        const playNow = player.enqueue(song);
+
+        if (playNow)
+            searchData.message = `Will begin playing \`${song.name}\` [${hhmmss(song.duration)}].`;
+        else
+            searchData.message = `Qeueued \`${song.name}\` [${hhmmss(song.duration)}], will play in ${hhmmss(queueDuration)} (${queueSize} ahead in queue)`;
+    }
+
+    /**
+     * Queue array of songs and set message accordingly in searchData.
+     * @param player 
+     * @param searchData 
+     */
+    private handleList(player: MusicPlayer, searchData: SearchData): void
+    {
+        const queueSize = player.getQueueSize();
+        const queueDuration = player.getQueueDuration();
+
+        const playNow = player.enqueue(searchData.songs);
+
+        let duration = 0;
+        for (const song of searchData.songs)
+        {
+            duration += song.duration;
+        }
+
+        if (playNow)
+            searchData.message = `Added ${searchData.songs.length} [${hhmmss(duration)}] songs from a playlist: <${searchData.input}>`;
+        else
+            searchData.message = `Qeueued ${searchData.songs.length} [${hhmmss(duration)}] songs from a playlist, will start in ${hhmmss(queueDuration)} (${queueSize} ahead in queue)`;
+    }
+
+    /**
+     * Search and handle queueing of song(s).
+     * @param interaction 
+     * @param searchOrURL 
+     * @param player 
+     * @returns 
+     */
+    private async handleSearch(interaction: ChatInputCommandInteraction, searchOrURL: string, player: MusicPlayer): Promise<SearchData>
+    {
+        const searchData = await processInput(searchOrURL, {
+            displayName: interaction.user.displayName,
+            userName: interaction.user.username
+        });
+
+        if (searchData.type == "single")
+            this.handleSingle(player, searchData);
+        else if (searchData.type == "list")
+            this.handleList(player, searchData);
+
+        return searchData;
+    }
+
     async execute(interaction: ChatInputCommandInteraction<CacheType>)
     {
+        // TODO: improve channel checks and player acquisition
+        
         const guildId = interaction.guildId;
         const voicechannel = this.voiceManager.getInteractionVoicechannel(interaction);
 
@@ -35,74 +112,29 @@ export class PlayCommand extends BotCommandBase
             return;
         }
 
-        const player = this.voiceManager.joinVoice(voicechannel);
         const searchOrURL = interaction.options.getString("search_or_url");
-
-        if (!player)
-        {
-            await this.replyError(interaction, "Bot seems to be broken lel.");
-            return;
-        }
-
         if (!searchOrURL)
         {
             await this.replyError(interaction, "Missing search term!");
             return;
         }
 
+        const player = this.voiceManager.joinVoice(voicechannel);
+        if (!player)
+        {
+            await this.replyError(interaction, "Bot seems to be broken.");
+            return;
+        }
+
         await interaction.deferReply();
 
-        try
+        const searchData = await this.handleSearch(interaction, searchOrURL, player);
+
+        if (searchData.type == "error")
         {
-            const searchResult = await processInput(searchOrURL, {
-                displayName: interaction.user.displayName,
-                userName: interaction.user.username
-            });
-
-            if (!searchResult)
-            {
-                await this.replyError(interaction, "No video results for: " + searchOrURL);
-                return;
-            }
-
-            if (Array.isArray(searchResult))
-            {
-                if (searchResult.length == 0)
-                {
-                    await this.replyError(interaction, "Playlist has no valid videos!");
-                    return;
-                }
-                player.enqueue(searchResult);
-                await this.replySuccess(interaction, `Added ${searchResult.length} songs from a playlist: ${searchOrURL}`);
-            }
-            else
-            {
-                const queueSize = player.getQueueSize();
-                // TODO: make duration till end
-                const queueDuration = player.getQueueDuration();
-                const playNow = player.enqueue(searchResult);
-
-                // TODO: Duration time format. 
-
-                if (playNow)
-                {
-                    await this.replySuccess(interaction, `Will begin playing \`${searchResult.name}\` [${searchResult.duration}].`);
-                }
-                else
-                {
-                    await this.replySuccess(interaction, `Qeueue \`${searchResult.name}\` [${searchResult.duration}], will play in ${queueDuration} (${queueSize} ahead in queue)`);
-                }
-            }
+            this.replyError(interaction, searchData.message);
+            return;
         }
-        catch (error)
-        {
-            if (typeof error === "string")
-            {
-                await this.replyError(interaction, error);
-                return;
-            }
-            this.logger.logError("Unexpected error on search!", error);
-            await this.replyError(interaction, "Unexpected error!");
-        }
+        this.replySuccess(interaction, searchData.message);
     }
 }
