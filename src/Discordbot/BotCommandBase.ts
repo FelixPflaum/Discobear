@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction, SlashCommandBuilder, PermissionsBitField } from "discord.js";
+import { ChatInputCommandInteraction, SlashCommandBuilder, PermissionsBitField, Embed, InteractionEditReplyOptions, EmbedBuilder } from "discord.js";
 import { Logger } from "../Logger";
 
 export abstract class BotCommandBase
@@ -62,13 +62,17 @@ export abstract class BotCommandBase
      * Also handles promise rejections. Returned boolean value denotes success.
      * @param interaction 
      * @param msg 
+     * @param embeds
      */
-    protected async interactionReply(interaction: ChatInputCommandInteraction, msg: string)
+    protected async interactionReply(interaction: ChatInputCommandInteraction, msg: string, embeds?: (Embed | EmbedBuilder)[])
     {
+        const payload: InteractionEditReplyOptions = { content: msg };
+        if (embeds) payload.embeds = embeds;
+
         try
         {
             if (interaction.deferred)
-                await interaction.editReply(msg);
+                await interaction.editReply(payload);
             else
                 await interaction.reply(msg);
         }

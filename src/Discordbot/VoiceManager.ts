@@ -53,11 +53,11 @@ export class VoiceManager
     }
 
     /**
-     * Check if bot is in the same channel.
+     * Return MusicPlayer in bot is currently in this channel.
      * @param voicechannel 
      * @returns 
      */
-    isBotInSameChannel(voicechannel: VoiceBasedChannel)
+    getBotForChannel(voicechannel: VoiceBasedChannel)
     {
         const musicplayer = this.activePlayers.get(voicechannel.guildId);
         if (musicplayer && musicplayer.isInChannel(voicechannel))
@@ -66,16 +66,26 @@ export class VoiceManager
     }
 
     /**
+     * Return MusicPlayer for guild if it exists.
+     * @param guildId 
+     * @returns 
+     */
+    getBotForGuild(guildId: string)
+    {
+        return this.activePlayers.get(guildId);
+    }
+
+    /**
      * Create player for voice channel and attempt to connect.
      * @param voicechannel 
-     * @returns MusicPlayer instance if connection was successful.
+     * @returns MusicPlayer instance if connection was successful or player already existed for this channel.
      */
     async joinVoice(voicechannel: VoiceBasedChannel)
     {
         const guildId = voicechannel.guild.id;
 
         if (!this.isBotFree(guildId))
-            return;
+            return this.getBotForChannel(voicechannel);
 
         this.logger.log(`Adding MusicPlayer for guild ${voicechannel.guild.name} (${guildId}).`);
 

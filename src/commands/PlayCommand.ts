@@ -38,9 +38,9 @@ export class PlayCommand extends BotCommandBase
         const playNow = player.enqueue(song);
 
         if (playNow)
-            searchData.message = `Will begin playing \`${song.name}\` [${hhmmss(song.duration)}].`;
+            searchData.message = `Will begin playing:\n\`${song.name}\` [${hhmmss(song.duration)}]`;
         else
-            searchData.message = `Qeueued \`${song.name}\` [${hhmmss(song.duration)}], will play in ${hhmmss(queueDuration)} (${queueSize} ahead in queue)`;
+            searchData.message = `Qeueued:\n\`${song.name}\` [${hhmmss(song.duration)}]\nWill play in ${hhmmss(queueDuration)} (${queueSize} ahead in queue).`;
     }
 
     /**
@@ -62,9 +62,9 @@ export class PlayCommand extends BotCommandBase
         }
 
         if (playNow)
-            searchData.message = `Added ${searchData.songs.length} [${hhmmss(duration)}] songs from a playlist: <${searchData.input}>`;
+            searchData.message = `Added ${searchData.songs.length} [${hhmmss(duration)}] songs from a playlist:\n<${searchData.input}>`;
         else
-            searchData.message = `Qeueued ${searchData.songs.length} [${hhmmss(duration)}] songs from a playlist, will start in ${hhmmss(queueDuration)} (${queueSize} ahead in queue)`;
+            searchData.message = `Qeueued ${searchData.songs.length} [${hhmmss(duration)}] songs from a playlist, will start in ${hhmmss(queueDuration)} (${queueSize} ahead in queue).`;
     }
 
     /**
@@ -91,8 +91,6 @@ export class PlayCommand extends BotCommandBase
 
     async execute(interaction: ChatInputCommandInteraction<CacheType>)
     {
-        // TODO: improve channel checks and player acquisition
-
         const guildId = interaction.guildId;
         const voicechannel = this.getInteractionVoicechannel(interaction);
 
@@ -103,9 +101,9 @@ export class PlayCommand extends BotCommandBase
         }
 
         if (!this.voiceManager.isBotFree(guildId)
-            && !this.voiceManager.isBotInSameChannel(voicechannel))
+            && !this.voiceManager.getBotForChannel(voicechannel))
         {
-            await this.replyError(interaction, "Bot is already in use in another channel!");
+            await this.replyError(interaction, "I'm already in use in another channel!");
             return;
         }
 

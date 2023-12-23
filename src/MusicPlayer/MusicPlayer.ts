@@ -258,20 +258,27 @@ export class MusicPlayer
 
     /**
      * Skip current song. Stops playback if queue is empty.
+     * @returns True if something was skipped.
      */
     skip()
     {
-        if (this.audioPlayer.state.status !== AudioPlayerStatus.Idle)
-            this.audioPlayer.stop();
+        if (this.audioPlayer.state.status === AudioPlayerStatus.Idle)
+            return;
+        const wasPlaying = this.nowPlaying?.song;
+        this.audioPlayer.stop();
+        return wasPlaying;
     }
 
     /**
      * Stop playback and empty queue.
+     * @returns True is something was playing.
      */
     stop()
     {
+        const wasPlaying = !!this.nowPlaying;
         this.queue.clear();
         this.skip();
+        return wasPlaying;
     }
 
     /**
