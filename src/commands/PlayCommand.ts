@@ -1,12 +1,12 @@
 import { ChatInputCommandInteraction, CacheType } from "discord.js";
 import { BotCommandBase } from "../Discordbot/BotCommandBase";
-//import { processInput } from "../searcher";
-//import { Logger } from "../Logger";
+import { processInput } from "../searcher";
+import { Logger } from "../Logger";
 import { VoiceManager } from "../Discordbot/VoiceManager";
 
 export class PlayCommand extends BotCommandBase
 {
-    //private readonly logger: Logger;
+    private readonly logger: Logger;
     private readonly voiceManager: VoiceManager;
 
     constructor(voiceManager: VoiceManager)
@@ -14,7 +14,7 @@ export class PlayCommand extends BotCommandBase
         super("play", "Play or queue music.");
         this.voiceManager = voiceManager;
         this.addStringOption("search_or_url", "Search term or video URL.", 4, 250);
-        //this.logger = new Logger("PlayCommand");
+        this.logger = new Logger("PlayCommand");
     }
 
     async execute(interaction: ChatInputCommandInteraction<CacheType>)
@@ -36,6 +36,7 @@ export class PlayCommand extends BotCommandBase
         }
 
         const player = this.voiceManager.joinVoice(voicechannel);
+        const searchOrURL = interaction.options.getString("search_or_url");
 
         if (!player)
         {
@@ -43,7 +44,6 @@ export class PlayCommand extends BotCommandBase
             return;
         }
 
-        /* const searchOrURL = interaction.options.getString("search_or_url");
         if (!searchOrURL)
         {
             await this.replyError(interaction, "Missing search term!");
@@ -54,7 +54,10 @@ export class PlayCommand extends BotCommandBase
 
         try
         {
-            const searchResult = await processInput(searchOrURL);
+            const searchResult = await processInput(searchOrURL, {
+                displayName: interaction.user.displayName,
+                userName: interaction.user.username
+            });
 
             if (!searchResult)
             {
@@ -64,16 +67,32 @@ export class PlayCommand extends BotCommandBase
 
             if (Array.isArray(searchResult))
             {
-                if (searchResult.length === 0)
+                if (searchResult.length == 0)
                 {
                     await this.replyError(interaction, "Playlist has no valid videos!");
                     return;
                 }
-                // TODO: queue/play playlist
-                return;
+                player.enqueue(searchResult);
+                await this.replySuccess(interaction, `Added ${searchResult.length} songs from a playlist: ${searchOrURL}`);
             }
+            else
+            {
+                const queueSize = player.getQueueSize();
+                // TODO: make duration till end
+                const queueDuration = player.getQueueDuration();
+                const playNow = player.enqueue(searchResult);
 
-            // TODO: queue/play song
+                // TODO: Duration time format. 
+
+                if (playNow)
+                {
+                    await this.replySuccess(interaction, `Will begin playing \`${searchResult.name}\` [${searchResult.duration}].`);
+                }
+                else
+                {
+                    await this.replySuccess(interaction, `Qeueue \`${searchResult.name}\` [${searchResult.duration}], will play in ${queueDuration} (${queueSize} ahead in queue)`);
+                }
+            }
         }
         catch (error)
         {
@@ -84,6 +103,6 @@ export class PlayCommand extends BotCommandBase
             }
             this.logger.logError("Unexpected error on search!", error);
             await this.replyError(interaction, "Unexpected error!");
-        } */
+        }
     }
 }

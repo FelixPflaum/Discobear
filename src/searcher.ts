@@ -1,16 +1,16 @@
 import { YouTubeVideo, playlist_info, search, validate, video_basic_info } from "play-dl";
 import { Logger } from "./Logger";
-import { Song } from "./Song";
+import { Song } from "./MusicPlayer/Song";
 import { getConfig } from "./configfile";
 
 const cfg = getConfig();
 const logger = new Logger("Search");
 
-function songFromVideoInfo(info: YouTubeVideo)
+function songFromVideoInfo(info: YouTubeVideo, requester: { displayName: string, userName: string })
 {
     const bestThumbnail = info.thumbnails[info.thumbnails.length - 1];
     if (!info.title || !bestThumbnail) return;
-    return new Song(info.title, info.url, info.durationInSec, bestThumbnail.url);
+    return new Song(info.title, info.url, info.durationInSec, bestThumbnail.url, requester);
 }
 
 /**
@@ -19,10 +19,10 @@ function songFromVideoInfo(info: YouTubeVideo)
  * @returns 
  * @throws {string} Error message meant to be shown to the user.
  */
-async function getSongFromYoutubeURL(url: string)
+async function getSongFromYoutubeURL(url: string, requester: { displayName: string, userName: string })
 {
     const info = await video_basic_info(url);
-    const song = songFromVideoInfo(info.video_details);
+    const song = songFromVideoInfo(info.video_details, requester);
     if (!song) throw "Could not get video info!";
     if (song.duration > cfg.videoMaxDuration) throw "Video exceeds maximum allowed duration!";
     return song;
@@ -34,7 +34,7 @@ async function getSongFromYoutubeURL(url: string)
  * @returns 
  * @throws {string} Error message meant to be shown to the user.
  */
-async function getSongsFromYoutubePlaylist(url: string)
+async function getSongsFromYoutubePlaylist(url: string, requester: { displayName: string, userName: string })
 {
     const info = await playlist_info(url, { incomplete: true });
     const songs: Song[] = [];
@@ -46,7 +46,7 @@ async function getSongsFromYoutubePlaylist(url: string)
 
     for (const video of videos)
     {
-        const song = songFromVideoInfo(video);
+        const song = songFromVideoInfo(video, requester);
         if (!song) continue;
         duration += song.duration;
         songs.push(song);
@@ -57,12 +57,12 @@ async function getSongsFromYoutubePlaylist(url: string)
     return songs;
 }
 
-async function searchYoutube(term: string)
+async function searchYoutube(term: string, requester: { displayName: string, userName: string })
 {
     const results = await search(term, { limit: 1, source: { youtube: "video" } });
     const video = results && results[0];
     if (!video) return;
-    const song = songFromVideoInfo(video);
+    const song = songFromVideoInfo(video, requester);
     if (!song) throw "Could not get video info!";
     return song;
 }
@@ -70,10 +70,11 @@ async function searchYoutube(term: string)
 /**
  * 
  * @param input 
+ * @param requester
  * @throws {string} Error message meant to be shown to the user.
  * @returns Song for single search or Song[] array for playlists. Undefined or empty array if 0 (valid) results.
  */
-export async function processInput(input: string)
+export async function processInput(input: string, requester: { displayName: string, userName: string })
 {
     input = input.trim();
     let inputType: string | false;
@@ -100,11 +101,11 @@ export async function processInput(input: string)
         case "sp_playlist":
             throw "Unsupported service!";
         case "yt_playlist":
-            return getSongsFromYoutubePlaylist(input);
+            return getSongsFromYoutubePlaylist(input, requester);
         case "yt_video":
-            return getSongFromYoutubeURL(input);
+            return getSongFromYoutubeURL(input, requester);
         case "search":
-            return searchYoutube(input);
+            return searchYoutube(input, requester);
         default:
             throw "Unhandled input type!";
     }

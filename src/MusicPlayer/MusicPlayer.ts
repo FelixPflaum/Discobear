@@ -1,6 +1,8 @@
 import { VoiceConnectionStatus, entersState, getVoiceConnection, joinVoiceChannel } from "@discordjs/voice";
 import { VoiceBasedChannel } from "discord.js";
 import { Logger } from "../Logger";
+import { SongQueue } from "./SongQueue";
+import { Song } from "./Song";
 
 const enum LeaveReason
 {
@@ -20,12 +22,15 @@ export class MusicPlayer
     readonly guildId: string;
     private readonly logger: Logger;
     private readonly leaveTimer: { [index: string]: NodeJS.Timeout } = {};
+    private readonly queue: SongQueue;
     private voiceChannelId: string | undefined;
     private onDestroyCallbacks: (() => void)[] = [];
+    private nowPlaying: { song: Song, startedAt: number } | undefined;
 
     constructor(voicechannel: VoiceBasedChannel)
     {
         this.logger = new Logger("MusicPlayer|" + voicechannel.guild.name);
+        this.queue = new SongQueue();
         this.guildId = voicechannel.guildId;
         this.updateChannel(voicechannel);
         this.createConnection(voicechannel);
@@ -92,6 +97,98 @@ export class MusicPlayer
                 this.logger.log("Self destruction, reason: " + reason);
                 this.destroy();
             }, leaveDelay[reason]);
+    }
+
+    /**
+     * Play next song from queue.
+     */
+    playNext()
+    {
+        const next = this.queue.getNext();
+
+        if (!next)
+        {
+            // TODO: enter idle?
+        }
+
+        // TODO: play
+
+        throw new Error("function NYI");
+    }
+
+    /**
+     * Enqueue song or array of songs.
+     * @param songOrSongs 
+     * @returns True if song will play immedeately.
+     */
+    enqueue(songOrSongs: Song | Song[]): boolean
+    {
+        if (Array.isArray(songOrSongs))
+        {
+            for (const song of songOrSongs)
+            {
+                this.queue.add(song);
+            }
+        }
+        else
+        {
+            this.queue.add(songOrSongs);
+        }
+        
+        if (!this.nowPlaying)
+        {
+            this.playNext();
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Skip current song. Stops playback if queue is empty.
+     */
+    skip()
+    {
+        // TODO: stop playback (and trigger next?)
+
+        throw new Error("function NYI");
+    }
+
+    /**
+     * Stop playback and empty queue.
+     */
+    stop()
+    {
+        this.queue.clear();
+        this.skip();
+    }
+
+    /**
+     * Get current queue size.
+     * @returns 
+     */
+    getQueueSize()
+    {
+        return this.queue.getSize();
+    }
+
+    /**
+     * Get current queue duration.
+     * @returns 
+     */
+    getQueueDuration()
+    {
+        return this.queue.getDuration();
+    }
+
+    /**
+     * Get array of up to count next songs in queue.
+     * @param count 
+     * @returns 
+     */
+    getNextSongs(count: number)
+    {
+        return this.queue.getSongList(count);
     }
 
     /**
