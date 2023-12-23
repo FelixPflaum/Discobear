@@ -232,7 +232,8 @@ export class MusicPlayer
             startedAt: Date.now() / 1000
         }
 
-        this.sendText("", [buildNowPlayingEmbed(song)]);
+        const next = this.queue.getSongList(1);
+        this.sendText("", [buildNowPlayingEmbed(song, next[0])]);
     }
 
     /**

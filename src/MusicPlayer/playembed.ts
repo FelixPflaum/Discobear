@@ -2,9 +2,9 @@ import { EmbedBuilder } from "discord.js";
 import { Song } from "./Song";
 import { hhmmss } from "../helper";
 
-export function buildNowPlayingEmbed(song: Song)
+export function buildNowPlayingEmbed(song: Song, next?: Song)
 {
-    return new EmbedBuilder()
+    const embed = new EmbedBuilder()
         .setTitle("💿 Now Playing")
         .setDescription(song.name)
         .setColor("#41a92f")
@@ -13,4 +13,9 @@ export function buildNowPlayingEmbed(song: Song)
             { name: "Requested by", value: song.requester.displayName, inline: true }
         )
         .setThumbnail(song.thumbnailUrl);
+
+    if (next)
+        embed.addFields({ name: "Next", value: next.name });
+
+    return embed;
 }
