@@ -92,8 +92,7 @@ export class Discordbot
     {
         if (this.client.isReady()) Promise.resolve();
         this.logger.log("Logging in...");
-        const wahtever = await this.client.login(this.token);
-        this.logger.log(wahtever);
+        await this.client.login(this.token);
     }
 
     /**
