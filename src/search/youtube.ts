@@ -2,6 +2,7 @@ import { YouTubeVideo, playlist_info, search, video_basic_info } from "play-dl";
 import { Song } from "../MusicPlayer/Song";
 import { getConfig } from "../configfile";
 import { SearchData } from "./search";
+import { L } from "../lang/language";
 
 const cfg = getConfig();
 
@@ -29,20 +30,20 @@ export async function handleURL(searchData: SearchData): Promise<void>
     const info = await video_basic_info(searchData.input);
     if (!info)
     {
-        searchData.message = "Could not get video info from URL!";
+        searchData.message = L("Could not get video info from URL!");
         return;
     }
 
     const song = songFromVideoInfo(info.video_details, searchData.requester);
     if (!song)
     {
-        searchData.message = "Could not get video info!";
+        searchData.message = L("Could not get video info!");
         return;
     }
 
     if (song.duration > cfg.videoMaxDuration)
     {
-        searchData.message = "Video exceeds maximum allowed duration!";
+        searchData.message = L("Video exceeds maximum allowed duration!");
         return;
     }
 
@@ -62,7 +63,7 @@ export async function handlePlaylist(searchData: SearchData): Promise<void>
 
     if (info.total_videos > cfg.playListMaxSize)
     {
-        searchData.message = "Playlist exceeds maximum allowed size!";
+        searchData.message = L("Playlist exceeds maximum allowed size!");
         return;
     }
 
@@ -79,13 +80,13 @@ export async function handlePlaylist(searchData: SearchData): Promise<void>
 
     if (searchData.songs.length == 0)
     {
-        searchData.message = "Playlist has no valid videos!";
+        searchData.message = L("Playlist has no valid videos!");
         return;
     }
 
     if (duration > cfg.playListMaxDuration)
     {
-        searchData.message = "Playlist exceeds maximum allowed duration!";
+        searchData.message = L("Playlist exceeds maximum allowed duration!");
         return;
     }
 
@@ -108,14 +109,14 @@ export async function handleSearch(searchData: SearchData): Promise<void>
     const video = results && results[0];
     if (!video)
     {
-        searchData.message = "No results for: " + searchData.input;
+        searchData.message = L("No results for: ") + searchData.input;
         return;
     }
 
     const song = songFromVideoInfo(video, searchData.requester);
     if (!song)
     {
-        searchData.message = "Could not get video info!";
+        searchData.message = L("Could not get video info!");
         return;
     }
 

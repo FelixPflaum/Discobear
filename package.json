@@ -1,4 +1,8 @@
 {
+  "scripts": {
+    "start": "node ./build/app.js",
+    "updatelangfiles": "node ./build/src/lang/createFiles.js"
+  },
   "dependencies": {
     "@discordjs/opus": "^0.9.0",
     "@discordjs/voice": "^0.16.1",

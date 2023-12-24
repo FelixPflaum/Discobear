@@ -9,6 +9,7 @@ import { SongQueue } from "./SongQueue";
 import { Song } from "./Song";
 import { stream } from "play-dl";
 import { buildNowPlayingEmbed } from "./playembed";
+import { L } from "../lang/language";
 
 const enum LeaveReason
 {
@@ -218,7 +219,7 @@ export class MusicPlayer
         const connection = getVoiceConnection(this.guildId);
         if (!connection)
         {
-            this.sendText("Voice connection lost!");
+            this.sendText(L("Voice connection lost!"));
             this.destroy();
             return;
         }
@@ -243,7 +244,7 @@ export class MusicPlayer
     {
         if (!getVoiceConnection(this.guildId))
         {
-            this.sendText("Voice connection lost!");
+            this.sendText(L("Voice connection lost!"));
             this.destroy();
             return;
         }
@@ -253,7 +254,7 @@ export class MusicPlayer
         if (next)
             this.playSong(next);
         else
-            this.sendText("Nothing left to play, going back to sleep.");
+            this.sendText(L("Nothing left to play, going back to sleep."));
     }
 
     /**

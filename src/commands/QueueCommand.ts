@@ -3,6 +3,7 @@ import { BotCommandBase } from "../Discordbot/BotCommandBase";
 import { VoiceManager } from "../Discordbot/VoiceManager";
 import { hhmmss } from "../helper";
 import { Song } from "../MusicPlayer/Song";
+import { L } from "../lang/language";
 
 export class QueueCommand extends BotCommandBase
 {
@@ -10,7 +11,7 @@ export class QueueCommand extends BotCommandBase
 
     constructor(voiceManager: VoiceManager)
     {
-        super("queue", "Show next songs in queue.");
+        super("queue", L("Show next songs in queue."));
         this.voiceManager = voiceManager;
     }
 
@@ -25,15 +26,15 @@ export class QueueCommand extends BotCommandBase
     {
         const embed = new EmbedBuilder()
             .setColor("#2fa9a9")
-            .setTitle("Upcoming in queue")
-            .setDescription(`Total in queue: ${size}  |  Playing time: ${hhmmss(duration)}`);
+            .setTitle(L("Upcoming in queue"))
+            .setDescription(L("Total in queue: {size}  |  Playing time: {dur}", { size: size, dur: hhmmss(duration) }));
 
         for (let i = 0; i < songs.length; i++)
         {
             const song = songs[i]!;
             embed.addFields({
                 name: `${i + 1}. ${song.name}`,
-                value: `[${hhmmss(song.duration)}]  Added by *${song.requester.displayName}*`,
+                value: L("[{dur}]  Added by *{addedby}*", { dur: hhmmss(song.duration), addedby: song.requester.displayName }),
                 inline: false
             });
         }
@@ -46,14 +47,14 @@ export class QueueCommand extends BotCommandBase
         const guildId = interaction.guildId;
         if (!guildId)
         {
-            await this.replyError(interaction, "You're not in a guild!");
+            await this.replyError(interaction, L("You're not in a guild!"));
             return;
         }
 
         const player = this.voiceManager.getBotForGuild(guildId);
         if (!player || player.getQueueSize() == 0)
         {
-            await this.replyError(interaction, "I'm not playing anything right now.");
+            await this.replyError(interaction, L("I'm not playing anything right now."));
             return;
         }
 

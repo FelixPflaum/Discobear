@@ -7,13 +7,15 @@ interface IConfigFile
     videoMaxDuration: number,
     playListMaxSize: number,
     playListMaxDuration: number,
+    language: string,
 }
 
 const data: IConfigFile = {
     discordToken: "",
     videoMaxDuration: 3600 * 5,
     playListMaxSize: 50,
-    playListMaxDuration: 3600 * 5
+    playListMaxDuration: 3600 * 5,
+    language: "en"
 }
 
 const fileName = "config.json";
@@ -97,7 +99,7 @@ function loadConfigData()
     if (newSettings.length > 0)
     {
         safeConfigFile();
-        logger.log(`Following ${newSettings.length} new settings were added to config file (" + FILENAME + "):`);
+        logger.log(`Following ${newSettings.length} new settings were added to config file (${fileName}):`);
         for (const setting of newSettings)
         {
             logger.log(setting);

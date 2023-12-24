@@ -2,6 +2,7 @@ import { validate } from "play-dl";
 import { Logger } from "../Logger";
 import { Song } from "../MusicPlayer/Song";
 import * as yt from "./youtube";
+import { L } from "../lang/language";
 
 type PDLValidationResults = Awaited<ReturnType<typeof validate>>;
 
@@ -45,7 +46,7 @@ export async function processInput(input: string, requester: SearchData["request
     catch (error) 
     {
         logger.logError("Failed to validate input!", error);
-        searchData.message = "Could not validate input!";
+        searchData.message = L("Could not validate input!");
         return searchData;
     }
 
@@ -61,7 +62,7 @@ export async function processInput(input: string, requester: SearchData["request
             case "sp_track":
             case "sp_album":
             case "sp_playlist":
-                searchData.message = "Unsupported service!";
+                searchData.message = L("Unsupported service!");
                 break;
             case "yt_playlist":
                 await yt.handlePlaylist(searchData);
@@ -74,13 +75,13 @@ export async function processInput(input: string, requester: SearchData["request
                 break;
             case false:
             default:
-                searchData.message = "Invalid input!";
+                searchData.message = L("Invalid input!");
         }
     }
     catch (error)
     {
         logger.logError("Error while handling search!", error);
-        searchData.message = "Error while getting data!";
+        searchData.message = L("Error while getting data!");
     }
 
     return searchData;

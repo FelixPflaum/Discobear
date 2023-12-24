@@ -4,6 +4,7 @@ import { SearchData, processInput } from "../search/search";
 import { VoiceManager } from "../Discordbot/VoiceManager";
 import { MusicPlayer } from "../MusicPlayer/MusicPlayer";
 import { hhmmss } from "../helper";
+import { L } from "../lang/language";
 
 export class PlayCommand extends BotCommandBase
 {
@@ -11,9 +12,9 @@ export class PlayCommand extends BotCommandBase
 
     constructor(voiceManager: VoiceManager)
     {
-        super("play", "Play or queue music.");
+        super("play", L("Play or queue music."));
         this.voiceManager = voiceManager;
-        this.addStringOption("search_or_url", "Search term or video URL.", 4, 250);
+        this.addStringOption("search_or_url", L("Search term or video URL."), 4, 250);
     }
 
     /**
@@ -28,7 +29,7 @@ export class PlayCommand extends BotCommandBase
         if (!song)
         {
             searchData.type = "error";
-            searchData.message = "No result!";
+            searchData.message = L("No result!");
             this.logger.logError("There should never be 0 results at this point in handleSingle()");
             return;
         }
@@ -38,9 +39,10 @@ export class PlayCommand extends BotCommandBase
         const playNow = player.enqueue(song);
 
         if (playNow)
-            searchData.message = `Will begin playing:\n\`${song.name}\` [${hhmmss(song.duration)}]`;
+            searchData.message = L("Will begin playing:\n`{name}` [{dur}]", { name: song.name, dur: hhmmss(song.duration) });
         else
-            searchData.message = `Qeueued:\n\`${song.name}\` [${hhmmss(song.duration)}]\nWill play in ${hhmmss(queueDuration)} (${queueSize} ahead in queue).`;
+            searchData.message = L("Qeueued:\n`{name}` [{dur}]\nWill play in {playin} ({qsize} ahead in queue).",
+                { name: song.name, dur: hhmmss(song.duration), playin: hhmmss(queueDuration), qsize: queueSize });
     }
 
     /**
@@ -62,9 +64,11 @@ export class PlayCommand extends BotCommandBase
         }
 
         if (playNow)
-            searchData.message = `Added ${searchData.songs.length} [${hhmmss(duration)}] songs from a playlist:\n<${searchData.input}>`;
+            searchData.message = L("Added {count} [{dur}] songs from a playlist:\n<{url}>",
+                { count: searchData.songs.length, dur: hhmmss(duration), url: searchData.input });
         else
-            searchData.message = `Qeueued ${searchData.songs.length} [${hhmmss(duration)}] songs from a playlist, will start in ${hhmmss(queueDuration)} (${queueSize} ahead in queue).`;
+            searchData.message = L("Qeueued {count} [{dur}] songs from a playlist:\n<{url}>\nWill start in {playin} ({qsize} ahead in queue).",
+                { count: searchData.songs.length, dur: hhmmss(duration), url: searchData.input, playin: hhmmss(queueDuration), qsize: queueSize });
     }
 
     /**
@@ -97,21 +101,21 @@ export class PlayCommand extends BotCommandBase
 
         if (!voicechannel || !guildId || !textchanel)
         {
-            await this.replyError(interaction, "You're not in a voice channel!");
+            await this.replyError(interaction, L("You're not in a voice channel!"));
             return;
         }
 
         if (!this.voiceManager.isBotFree(guildId)
             && !this.voiceManager.getBotForChannel(voicechannel))
         {
-            await this.replyError(interaction, "I'm already in use in another channel!");
+            await this.replyError(interaction, L("I'm already in use in another channel!"));
             return;
         }
 
         const searchOrURL = interaction.options.getString("search_or_url");
         if (!searchOrURL)
         {
-            await this.replyError(interaction, "Missing search term!");
+            await this.replyError(interaction, L("Missing search term!"));
             return;
         }
 
@@ -120,7 +124,7 @@ export class PlayCommand extends BotCommandBase
         const player = await this.voiceManager.joinVoice(voicechannel, textchanel);
         if (!player)
         {
-            await this.replyError(interaction, "Couldn't join voice channel!");
+            await this.replyError(interaction, L("Couldn't join voice channel!"));
             return;
         }
 
