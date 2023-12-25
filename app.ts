@@ -28,7 +28,14 @@ async function stop()
 {
     log.log("Stopping...");
     if (bot) await bot.disconnect();
-    log.log("Discobear stopped.");
+
+    setTimeout(() =>
+    {
+        log.log("Discobear stopped.");
+        // Can't be bothered to look into what's keeping it alive and why.
+        // Bot is disconnected at this point so who cares.
+        process.exit();
+    }, 1000);
 }
 
 start();
