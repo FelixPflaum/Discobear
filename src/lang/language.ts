@@ -50,7 +50,7 @@ const strings = (() =>
  */
 export function L(str: string, replace?: { [placeholder: string]: string | number })
 {
-    let translated = strings[str.replace(/\n/,"\\n")];
+    let translated = strings[str.replace(/\n/g,"\\n")];
 
     if (!translated)
     {
@@ -67,5 +67,5 @@ export function L(str: string, replace?: { [placeholder: string]: string | numbe
         }
     }
 
-    return translated.replace(/\\n/, "\n");
+    return translated.replace(/\\n/g, "\n");
 }
