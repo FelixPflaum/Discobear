@@ -38,5 +38,6 @@
     "Playlist exceeds maximum allowed size!": "Playlist überschreitet erlaubte Normgröße!",
     "Playlist has no valid videos!": "Playlist enthält keine gültigen Einträge!",
     "Playlist exceeds maximum allowed duration!": "Playlist überschreitet Spieldauertoleranzen!",
-    "No results for: ": "Kein Ergebnis gefunden für: "
+    "No results for: ": "Kein Ergebnis gefunden für: ",
+    "Unable to create stream!": "Unable to create stream!"
 }

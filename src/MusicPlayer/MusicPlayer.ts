@@ -1,6 +1,6 @@
 import
 {
-    AudioPlayer, AudioPlayerStatus, NoSubscriberBehavior, VoiceConnectionStatus,
+    AudioPlayer, AudioPlayerStatus, AudioResource, NoSubscriberBehavior, VoiceConnectionStatus,
     createAudioPlayer, createAudioResource, entersState, getVoiceConnection, joinVoiceChannel
 } from "@discordjs/voice";
 import { Embed, EmbedBuilder, MessageCreateOptions, TextBasedChannel, VoiceBasedChannel } from "discord.js";
@@ -224,8 +224,22 @@ export class MusicPlayer
             return;
         }
 
-        const playStream = await stream(song.url, { discordPlayerCompatibility: true });
-        const audio = createAudioResource(playStream.stream);
+        let audio: AudioResource;
+
+        try
+        {
+            const playStream = await stream(song.url, { discordPlayerCompatibility: true });
+            audio = createAudioResource(playStream.stream);
+        }
+        catch (error)
+        {
+            // ffmpeg is not installed, or another unrecoverable problem with yt exists.
+            this.sendText(L("Unable to create stream!"));
+            this.destroy();
+            this.logger.logError("Error on creating yt stream! Is ffmpeg installed?", error);
+            return;
+        }
+
         this.audioPlayer.play(audio);
 
         this.nowPlaying = {
