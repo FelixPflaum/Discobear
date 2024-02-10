@@ -59,7 +59,7 @@ for (const langFile of langFiles)
     console.log("Updating file: " + target);
 
     const data = readFileSync(target, "utf-8");
-    const parsed = <{ [index: string]: string }>JSON.parse(data);
+    const parsed = <{ [index: string]: string }>JSON.parse(data || "{}");
 
     for (const str in parsed)
     {
