@@ -120,6 +120,7 @@ export async function handleSearch(searchData: SearchData): Promise<void>
         return;
     }
 
+    searchData.message = L("Searched for: `{searchterm}`", { searchterm: searchData.input });
     searchData.type = "single";
     searchData.songs.push(song);
 }

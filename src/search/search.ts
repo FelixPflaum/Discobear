@@ -14,7 +14,7 @@ export interface SearchData
     input: string,
     requester: Song["requester"],
     /** The (error) message to be shown to the client. */
-    message: string,
+    message?: string,
     songs: Song[]
 }
 
@@ -26,7 +26,7 @@ const logger = new Logger("Search");
  * @param requester
  * @returns 
  */
-export async function processInput(input: string, requester: SearchData["requester"]): Promise<SearchData>
+export async function processInput(input: string, requester: SearchData["requester"]): Promise<Readonly<SearchData>>
 {
     input = input.trim();
 
@@ -35,7 +35,6 @@ export async function processInput(input: string, requester: SearchData["request
         inputType: false,
         requester: requester,
         type: "error",
-        message: "no message",
         songs: []
     }
 

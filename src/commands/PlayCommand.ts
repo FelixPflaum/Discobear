@@ -6,6 +6,12 @@ import { MusicPlayer } from "../MusicPlayer/MusicPlayer";
 import { hhmmss } from "../helper";
 import { L } from "../lang/language";
 
+interface EnqueueResult
+{
+    isError: boolean,
+    message: string
+}
+
 export class PlayCommand extends BotCommandBase
 {
     private readonly voiceManager: VoiceManager;
@@ -23,26 +29,28 @@ export class PlayCommand extends BotCommandBase
      * @param searchData 
      * @returns 
      */
-    private handleSingle(player: MusicPlayer, searchData: SearchData): void
+    private handleSingle(player: MusicPlayer, searchData: Readonly<SearchData>): EnqueueResult
     {
         const song = searchData.songs[0];
         if (!song)
         {
-            searchData.type = "error";
-            searchData.message = L("No result!");
             this.logger.logError("There should never be 0 results at this point in handleSingle()");
-            return;
+            return { isError: true, message: L("No result!") };
         }
 
+        const res: EnqueueResult = { isError: false, message: "" };
         const queueSize = player.getQueueSize();
         const queueDuration = player.getQueueDuration();
         const playNow = player.enqueue(song);
 
         if (playNow)
-            searchData.message = L("Will begin playing:\n`{name}` [{dur}]", { name: song.name, dur: hhmmss(song.duration) });
+            res.message = L("Will begin playing:\n`{name}` [{dur}]", { name: song.name, dur: hhmmss(song.duration) });
         else
-            searchData.message = L("Qeueued:\n`{name}` [{dur}]\nWill play in {playin} ({qsize} ahead in queue).",
+            res.message = L("Qeueued:\n`{name}` [{dur}]\nWill play in {playin} ({qsize} ahead in queue).",
                 { name: song.name, dur: hhmmss(song.duration), playin: hhmmss(queueDuration), qsize: queueSize });
+
+        if (searchData.message) res.message = searchData.message + "\n" + res.message;
+        return res;
     }
 
     /**
@@ -50,11 +58,11 @@ export class PlayCommand extends BotCommandBase
      * @param player 
      * @param searchData 
      */
-    private handleList(player: MusicPlayer, searchData: SearchData): void
+    private handleList(player: MusicPlayer, searchData: Readonly<SearchData>): EnqueueResult
     {
         const queueSize = player.getQueueSize();
         const queueDuration = player.getQueueDuration();
-
+        const res: EnqueueResult = { isError: false, message: "" };
         const playNow = player.enqueue(searchData.songs);
 
         let duration = 0;
@@ -64,11 +72,14 @@ export class PlayCommand extends BotCommandBase
         }
 
         if (playNow)
-            searchData.message = L("Added {count} [{dur}] songs from a playlist:\n<{url}>",
+            res.message = L("Added {count} [{dur}] songs from a playlist:\n<{url}>",
                 { count: searchData.songs.length, dur: hhmmss(duration), url: searchData.input });
         else
-            searchData.message = L("Qeueued {count} [{dur}] songs from a playlist:\n<{url}>\nWill start in {playin} ({qsize} ahead in queue).",
+            res.message = L("Qeueued {count} [{dur}] songs from a playlist:\n<{url}>\nWill start in {playin} ({qsize} ahead in queue).",
                 { count: searchData.songs.length, dur: hhmmss(duration), url: searchData.input, playin: hhmmss(queueDuration), qsize: queueSize });
+
+        if (searchData.message) res.message = searchData.message + "\n" + res.message;
+        return res;
     }
 
     /**
@@ -78,7 +89,7 @@ export class PlayCommand extends BotCommandBase
      * @param player 
      * @returns 
      */
-    private async handleSearch(interaction: ChatInputCommandInteraction, searchOrURL: string, player: MusicPlayer): Promise<SearchData>
+    private async handleSearch(interaction: ChatInputCommandInteraction, searchOrURL: string, player: MusicPlayer): Promise<Readonly<EnqueueResult>>
     {
         const searchData = await processInput(searchOrURL, {
             displayName: interaction.user.displayName,
@@ -86,11 +97,11 @@ export class PlayCommand extends BotCommandBase
         });
 
         if (searchData.type == "single")
-            this.handleSingle(player, searchData);
+            return this.handleSingle(player, searchData);
         else if (searchData.type == "list")
-            this.handleList(player, searchData);
+            return this.handleList(player, searchData);
 
-        return searchData;
+        return { isError: true, message: searchData.message ?? "No error message." };
     }
 
     async execute(interaction: ChatInputCommandInteraction<CacheType>)
@@ -128,13 +139,13 @@ export class PlayCommand extends BotCommandBase
             return;
         }
 
-        const searchData = await this.handleSearch(interaction, searchOrURL, player);
+        const result = await this.handleSearch(interaction, searchOrURL, player);
 
-        if (searchData.type == "error")
+        if (result.isError)
         {
-            this.replyError(interaction, searchData.message);
+            this.replyError(interaction, result.message);
             return;
         }
-        this.replySuccess(interaction, searchData.message);
+        this.replySuccess(interaction, result.message);
     }
 }

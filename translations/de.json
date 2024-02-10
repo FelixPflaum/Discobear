@@ -39,5 +39,6 @@
     "Playlist has no valid videos!": "Playlist hat keine gültigen Videos!",
     "Playlist exceeds maximum allowed duration!": "Playlist überschreitet maximale Spieldauer!",
     "No results for: ": "Kein Ergebnis für: ",
-    "Unable to create stream!": "Unable to create stream!"
+    "Unable to create stream!": "Unable to create stream!",
+    "Searched for: `{searchterm}`": "Gesucht nach: `{searchterm}`"
 }
