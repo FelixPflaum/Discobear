@@ -1,5 +1,6 @@
 {
   "scripts": {
+    "build": "tsc",
     "start": "node ./build/app.js",
     "updatelangfiles": "node ./build/src/lang/createFiles.js"
   },
@@ -10,6 +11,7 @@
     "discord.js": "^14.14.1",
     "play-dl": "^1.9.7",
     "sodium": "^3.0.2",
+    "typescript": "^5.3.3",
     "utf-8-validate": "^6.0.3",
     "zlib-sync": "^0.1.9"
   }
