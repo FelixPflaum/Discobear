@@ -8,6 +8,8 @@ interface IConfigFile
     playListMaxSize: number,
     playListMaxDuration: number,
     language: string,
+    youtubeCookie: string,
+    useragent: string,
 }
 
 const data: IConfigFile = {
@@ -15,7 +17,9 @@ const data: IConfigFile = {
     videoMaxDuration: 3600 * 5,
     playListMaxSize: 50,
     playListMaxDuration: 3600 * 5,
-    language: "en"
+    language: "en",
+    youtubeCookie: "",
+    useragent: "",
 }
 
 const fileName = "config.json";
