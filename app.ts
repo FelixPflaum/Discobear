@@ -1,4 +1,4 @@
-import { setToken } from "play-dl";
+// import { setToken } from "play-dl";
 import { Discordbot } from "./src/Discordbot/Discordbot";
 import { Logger } from "./src/Logger";
 import { PlayCommand } from "./src/commands/PlayCommand";
@@ -10,28 +10,28 @@ import { getConfig } from "./src/configfile";
 const log = new Logger("App");
 let bot: Discordbot | undefined;
 
-function applyPlayDlSettings(ytcookie: string, agent: string) {
-    const options: Parameters<typeof setToken>[0] = {};
+// function applyPlayDlSettings(ytcookie: string, agent: string) {
+//     const options: Parameters<typeof setToken>[0] = {};
 
-    if (ytcookie) {
-        options.youtube = {
-            cookie: ytcookie,
-        };
-    }
+//     if (ytcookie) {
+//         options.youtube = {
+//             cookie: ytcookie,
+//         };
+//     }
 
-    if (agent) {
-        options.useragent = [agent];
-    }
+//     if (agent) {
+//         options.useragent = [agent];
+//     }
 
-    setToken(options);
-}
+//     setToken(options);
+// }
 
 async function start()
 {
     log.log("Starting Discobear...");
 
     const cfg = getConfig();
-    applyPlayDlSettings(cfg.youtubeCookie, cfg.useragent)
+    // applyPlayDlSettings(cfg.youtubeCookie, cfg.useragent)
     bot = new Discordbot(cfg.discordToken);
     bot.registerCommand(new PlayCommand(bot.voiceManager));
     bot.registerCommand(new SkipCommand(bot.voiceManager));

@@ -7,9 +7,10 @@ import { Embed, EmbedBuilder, MessageCreateOptions, TextBasedChannel, VoiceBased
 import { Logger } from "../Logger";
 import { SongQueue } from "./SongQueue";
 import { Song } from "./Song";
-import { stream } from "play-dl";
+// import { stream } from "play-dl";
 import { buildNowPlayingEmbed } from "./playembed";
 import { L } from "../lang/language";
+import ytdl, {} from "@distube/ytdl-core";
 
 const enum LeaveReason
 {
@@ -228,8 +229,9 @@ export class MusicPlayer
 
         try
         {
-            const playStream = await stream(song.url, { discordPlayerCompatibility: true });
-            audio = createAudioResource(playStream.stream);
+            //const playStream = await stream(song.url, { discordPlayerCompatibility: true });
+            const ytdlStream = ytdl(song.url, { quality: "highestaudio" });
+            audio = createAudioResource(ytdlStream);
         }
         catch (error)
         {
