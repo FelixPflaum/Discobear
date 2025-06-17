@@ -2,7 +2,7 @@ import { Client, GatewayIntentBits, Guild, REST, RESTPostAPIChatInputApplication
 import { Logger } from "../Logger";
 import { BotCommandBase } from "./BotCommandBase";
 import { VoiceManager } from "./VoiceManager";
-import Innertube from "youtubei.js/agnostic";
+import Innertube from "youtubei.js";
 
 export class Discordbot
 {

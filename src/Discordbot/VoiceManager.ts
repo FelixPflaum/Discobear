@@ -1,7 +1,7 @@
 import { Client, TextBasedChannel, VoiceBasedChannel } from "discord.js";
 import { MusicPlayer } from "../MusicPlayer/MusicPlayer";
 import { Logger } from "../Logger";
-import Innertube from "youtubei.js/agnostic";
+import Innertube from "youtubei.js";
 
 export class VoiceManager
 {

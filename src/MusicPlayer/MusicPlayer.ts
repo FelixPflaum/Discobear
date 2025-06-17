@@ -16,7 +16,7 @@ import { SongQueue } from "./SongQueue";
 import { Song } from "./Song";
 import { buildNowPlayingEmbed } from "./playembed";
 import { L } from "../lang/language";
-import Innertube from "youtubei.js/agnostic";
+import Innertube from "youtubei.js";
 import { Readable } from "node:stream";
 
 const enum LeaveReason {
