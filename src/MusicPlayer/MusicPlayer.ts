@@ -60,13 +60,12 @@ export class MusicPlayer {
      * @returns Promise containing the Message if sent successfully.
      */
     private async sendText(msg: string, embeds?: (Embed | EmbedBuilder)[]) {
-        if (!this.textchannel) return;
+        if (!this.textchannel || !this.textchannel.isSendable()) return;
 
         const payload: MessageCreateOptions = { content: msg };
         if (embeds) payload.embeds = embeds;
 
         try {
-            // @ts-ignore
             return await this.textchannel.send(payload);
         } catch (error) {
             this.logger.logError("Failed to send message to text channel!", error);
