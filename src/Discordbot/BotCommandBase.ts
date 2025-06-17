@@ -72,6 +72,7 @@ export abstract class BotCommandBase
         try
         {
             if (interaction.deferred)
+                // @ts-ignore
                 await interaction.editReply(payload);
             else
                 await interaction.reply(payload);

@@ -2,6 +2,7 @@ import { Client, GatewayIntentBits, Guild, REST, RESTPostAPIChatInputApplication
 import { Logger } from "../Logger";
 import { BotCommandBase } from "./BotCommandBase";
 import { VoiceManager } from "./VoiceManager";
+import Innertube from "youtubei.js/agnostic";
 
 export class Discordbot
 {
@@ -11,7 +12,7 @@ export class Discordbot
     private readonly commands: Map<string, BotCommandBase>;
     readonly voiceManager: VoiceManager;
 
-    constructor(token: string)
+    constructor(token: string, innerTube: Innertube)
     {
         this.token = token;
         this.logger = new Logger("Discordbot");
@@ -19,7 +20,7 @@ export class Discordbot
 
         this.client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates] });
 
-        this.voiceManager = new VoiceManager(this.client);
+        this.voiceManager = new VoiceManager(this.client, innerTube);
 
         this.client.on("ready", () =>
         {

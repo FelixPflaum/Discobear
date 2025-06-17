@@ -1,16 +1,20 @@
 import { Client, TextBasedChannel, VoiceBasedChannel } from "discord.js";
 import { MusicPlayer } from "../MusicPlayer/MusicPlayer";
 import { Logger } from "../Logger";
+import Innertube from "youtubei.js/agnostic";
 
 export class VoiceManager
 {
     private readonly activePlayers: Map<string, MusicPlayer>;
     private readonly logger: Logger;
+    private readonly innerTube: Innertube;
 
-    constructor(client: Client)
+    constructor(client: Client, innerTube: Innertube)
     {
         this.logger = new Logger("VoiceManager");
         this.activePlayers = new Map<string, MusicPlayer>();
+
+        this.innerTube = innerTube;
 
         // Manually track voice channel activity.
         // VoiceConnection does NOT provide its current channel, so this seems to be needed.
@@ -89,7 +93,7 @@ export class VoiceManager
 
         this.logger.log(`Adding MusicPlayer for guild ${voicechannel.guild.name} (${guildId}).`);
 
-        const musicplayer = new MusicPlayer(guildId, voicechannel.guild.name, textchanel);
+        const musicplayer = new MusicPlayer(guildId, voicechannel.guild.name, textchanel, this.innerTube);
         this.activePlayers.set(guildId, musicplayer);
 
         musicplayer.onDestroy(() =>
