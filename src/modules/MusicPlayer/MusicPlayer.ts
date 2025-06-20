@@ -6,6 +6,7 @@ import { SkipCommand } from "./commands/SkipCommand";
 import { StopCommand } from "./commands/StopCommand";
 import { QueueCommand } from "./commands/QueueCommand";
 import { Discordbot } from "../../Discordbot/Discordbot";
+import { PlayForChannelCommand } from "./commands/PlayForChannelCommand";
 
 export async function registerMusicPlayer(bot: Discordbot) {
     const cfg = getConfig();
@@ -27,4 +28,7 @@ export async function registerMusicPlayer(bot: Discordbot) {
     bot.registerCommand(new SkipCommand(bot.voiceManager));
     bot.registerCommand(new StopCommand(bot.voiceManager));
     bot.registerCommand(new QueueCommand(bot.voiceManager));
+    if (cfg.extraCommands.find((v) => v == "playex")) {
+        bot.registerCommand(new PlayForChannelCommand(bot.voiceManager, innerTube));
+    }
 }

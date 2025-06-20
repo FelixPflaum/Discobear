@@ -10,6 +10,7 @@ interface IConfigFile
     language: string,
     youtubeCookie: string,
     useragent: string,
+    extraCommands: string[],
 }
 
 const data: IConfigFile = {
@@ -20,6 +21,7 @@ const data: IConfigFile = {
     language: "en",
     youtubeCookie: "",
     useragent: "",
+    extraCommands: [],
 }
 
 const fileName = "config.json";

@@ -4,7 +4,9 @@ import {
     PermissionsBitField,
     Embed,
     EmbedBuilder,
-    BaseMessageOptions,
+    MessageFlags,
+    InteractionEditReplyOptions,
+    InteractionReplyOptions,
 } from "discord.js";
 import { Logger } from "../Logger";
 import { Discordbot } from "./Discordbot";
@@ -69,14 +71,20 @@ export abstract class BotCommandBase {
     protected async interactionReply(
         interaction: ChatInputCommandInteraction,
         msg: string,
-        embeds?: (Embed | EmbedBuilder)[]
+        embeds?: (Embed | EmbedBuilder)[],
+        ephemeral?: boolean
     ) {
-        const payload: BaseMessageOptions = { content: msg };
-        if (embeds) payload.embeds = embeds;
-
         try {
-            if (interaction.deferred) await interaction.editReply(payload);
-            else await interaction.reply(payload);
+            if (interaction.deferred) {
+                const payload: InteractionEditReplyOptions = { content: msg };
+                if (embeds) payload.embeds = embeds;
+                await interaction.editReply(payload);
+            } else {
+                const payload: InteractionReplyOptions = { content: msg };
+                if (ephemeral) payload.flags = MessageFlags.Ephemeral;
+                if (embeds) payload.embeds = embeds;
+                await interaction.reply(payload);
+            }
         } catch (error) {
             this.logger.logError("Interaction error!", error);
             return false;
@@ -88,20 +96,22 @@ export abstract class BotCommandBase {
      * Same as interactionReply() but prepends ❌, wow!
      * @param interaction
      * @param msg
+     * @param ephemeral
      * @returns
      */
-    protected replyError(interaction: ChatInputCommandInteraction, msg: string) {
-        return this.interactionReply(interaction, "❌ " + msg);
+    protected replyError(interaction: ChatInputCommandInteraction, msg: string, ephemeral = false) {
+        return this.interactionReply(interaction, "❌ " + msg, undefined, ephemeral);
     }
 
     /**
      * Same as interactionReply() but prepends 🐻, wow!
      * @param interaction
      * @param msg
+     * @param ephemeral
      * @returns
      */
-    protected replySuccess(interaction: ChatInputCommandInteraction, msg: string) {
-        return this.interactionReply(interaction, "🐻 " + msg);
+    protected replySuccess(interaction: ChatInputCommandInteraction, msg: string, ephemeral = false) {
+        return this.interactionReply(interaction, "🐻 " + msg, undefined, ephemeral);
     }
 
     /**
