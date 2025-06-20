@@ -7,6 +7,7 @@ import {
     BaseMessageOptions,
 } from "discord.js";
 import { Logger } from "../Logger";
+import { Discordbot } from "./Discordbot";
 
 export abstract class BotCommandBase {
     readonly command: string;
@@ -117,5 +118,5 @@ export abstract class BotCommandBase {
         return guildMember.voice.channel;
     }
 
-    abstract execute(interaction: ChatInputCommandInteraction): void | Promise<void>;
+    abstract execute(interaction: ChatInputCommandInteraction, bot: Discordbot): void | Promise<void>;
 }

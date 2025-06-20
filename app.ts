@@ -1,39 +1,19 @@
-import { Innertube } from "youtubei.js";
 import { Discordbot } from "./src/Discordbot/Discordbot";
 import { Logger } from "./src/Logger";
-import { PlayCommand } from "./src/commands/PlayCommand";
-import { QueueCommand } from "./src/commands/QueueCommand";
-import { SkipCommand } from "./src/commands/SkipCommand";
-import { StopCommand } from "./src/commands/StopCommand";
+import { registerMusicPlayer } from "./src/modules/MusicPlayer/MusicPlayer";
 import { getConfig } from "./src/configfile";
-import { readFileSync } from "node:fs";
 
 const log = new Logger("App");
 let bot: Discordbot | undefined;
 
 async function start() {
     log.log("Starting Discobear...");
-
     const cfg = getConfig();
 
-    let cookies = "";
-    if (cfg.youtubeCookie) {
-        cookies = readFileSync(cfg.youtubeCookie, "utf-8");
-    }
+    bot = new Discordbot(cfg.discordToken);
 
-    const innerTube = await Innertube.create({
-        //location: "DE",
-        //client_type: ClientType.MUSIC,
-        //user_agent: cfg.useragent,
-        cookie: cookies,
-        //generate_session_locally: true,
-    });
+    await registerMusicPlayer(bot);
 
-    bot = new Discordbot(cfg.discordToken, innerTube);
-    bot.registerCommand(new PlayCommand(bot.voiceManager));
-    bot.registerCommand(new SkipCommand(bot.voiceManager));
-    bot.registerCommand(new StopCommand(bot.voiceManager));
-    bot.registerCommand(new QueueCommand(bot.voiceManager));
     await bot.connect();
 
     log.log("Discobear ready.");

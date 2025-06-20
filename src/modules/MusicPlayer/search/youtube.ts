@@ -1,8 +1,8 @@
 import { YouTubeVideo, playlist_info, search, video_basic_info } from "play-dl";
-import { Song } from "../MusicPlayer/Song";
-import { getConfig } from "../configfile";
+import { Song } from "../Song";
+import { getConfig } from "../../../configfile";
 import { SearchData } from "./search";
-import { L } from "../lang/language";
+import { L } from "../../../lang/language";
 
 const cfg = getConfig();
 

@@ -1,123 +1,109 @@
-import { Client, TextBasedChannel, VoiceBasedChannel } from "discord.js";
-import { MusicPlayer } from "../MusicPlayer/MusicPlayer";
+import { Client, VoiceBasedChannel } from "discord.js";
 import { Logger } from "../Logger";
-import Innertube from "youtubei.js";
+import { VoiceBotInstance } from "./VoiceBotInstance";
 
-export class VoiceManager
-{
-    private readonly activePlayers: Map<string, MusicPlayer>;
+export class VoiceManager {
+    private readonly activeVoiceInstances: Map<string, VoiceBotInstance>;
     private readonly logger: Logger;
-    private readonly innerTube: Innertube;
 
-    constructor(client: Client, innerTube: Innertube)
-    {
+    constructor(client: Client) {
         this.logger = new Logger("VoiceManager");
-        this.activePlayers = new Map<string, MusicPlayer>();
-
-        this.innerTube = innerTube;
+        this.activeVoiceInstances = new Map<string, VoiceBotInstance>();
 
         // Manually track voice channel activity.
         // VoiceConnection does NOT provide its current channel, so this seems to be needed.
-        client.on("voiceStateUpdate", (oldState, newState) =>
-        {
+        client.on("voiceStateUpdate", (oldState, newState) => {
             const guildId = oldState.guild.id;
-            const musicplayer = this.activePlayers.get(guildId);
+            const instance = this.activeVoiceInstances.get(guildId);
 
-            if (!client.user || !musicplayer)
-                return;
+            if (!client.user || !instance) return;
 
             // State change is for a connection from the bot.
-            if (oldState.id == client.user.id)
-            {
-                if (newState.channel)
-                    musicplayer.updateChannel(newState.channel);
+            if (oldState.id == client.user.id) {
+                if (newState.channel) instance.updateChannel(newState.channel);
                 return;
             }
 
             // Handle other users leaving or joining a channel with the bot in it.
-            if (oldState.channel && musicplayer.isInChannel(oldState.channel))
-            {
-                musicplayer.updateChannel(oldState.channel);
-            }
-            else if (newState.channel && musicplayer.isInChannel(newState.channel))
-            {
-                musicplayer.updateChannel(newState.channel);
+            if (oldState.channel && instance.isInChannel(oldState.channel)) {
+                instance.updateChannel(oldState.channel);
+            } else if (newState.channel && instance.isInChannel(newState.channel)) {
+                instance.updateChannel(newState.channel);
             }
         });
     }
 
     /**
      * Check if bot is not in use in guild.
-     * @param guildId 
-     * @returns 
+     * @param guildId
+     * @returns
      */
-    isBotFree(guildId: string)
-    {
-        return !this.activePlayers.has(guildId);
+    isBotFree(guildId: string) {
+        return !this.activeVoiceInstances.has(guildId);
     }
 
     /**
-     * Return MusicPlayer in bot is currently in this channel.
-     * @param voicechannel 
-     * @returns 
+     * Return VoiceInstance if bot is currently active in this channel.
+     * @param voicechannel
+     * @returns VoiceBotInstance if currently active in channel.
      */
-    getBotForChannel(voicechannel: VoiceBasedChannel)
-    {
-        const musicplayer = this.activePlayers.get(voicechannel.guildId);
-        if (musicplayer && musicplayer.isInChannel(voicechannel))
-            return musicplayer;
-        return;
+    getBotForChannel(voicechannel: VoiceBasedChannel): VoiceBotInstance | undefined {
+        const active = this.activeVoiceInstances.get(voicechannel.guildId);
+        if (!active || !active.isInChannel(voicechannel)) return;
+        return active;
     }
 
     /**
-     * Return MusicPlayer for guild if it exists.
-     * @param guildId 
-     * @returns 
+     * Return current VoiceInstance for guild if one is active.
+     * @param guildId
+     * @returns VoiceBotInstance if currently active.
      */
-    getBotForGuild(guildId: string)
-    {
-        return this.activePlayers.get(guildId);
+    getBotForGuild(guildId: string): VoiceBotInstance | undefined {
+        const active = this.activeVoiceInstances.get(guildId);
+        if (!active) return;
+        return active;
     }
 
     /**
      * Create player for voice channel and attempt to connect.
-     * @param voicechannel 
-     * @returns MusicPlayer instance if connection was successful or player already existed for this channel.
+     * @param voicechannel
+     * @param textChannel
+     * @param customFactory VoiceBotInstance will be created using this function.
+     * @returns VoiceBotInstance if connection was successful or an instance already existed for this channel.
      */
-    async joinVoice(voicechannel: VoiceBasedChannel, textchanel: TextBasedChannel)
-    {
+    async joinVoice(
+        voicechannel: VoiceBasedChannel,
+        instanceFactory: () => VoiceBotInstance
+    ): Promise<VoiceBotInstance | undefined> {
         const guildId = voicechannel.guild.id;
 
-        if (!this.isBotFree(guildId))
+        if (!this.isBotFree(guildId)) {
             return this.getBotForChannel(voicechannel);
+        }
 
-        this.logger.log(`Adding MusicPlayer for guild ${voicechannel.guild.name} (${guildId}).`);
+        this.logger.log(`Adding VoiceInstance for guild ${voicechannel.guild.name} (${guildId}).`);
 
-        const musicplayer = new MusicPlayer(guildId, voicechannel.guild.name, textchanel, this.innerTube);
-        this.activePlayers.set(guildId, musicplayer);
+        const newInstance = instanceFactory();
+        this.activeVoiceInstances.set(guildId, newInstance);
 
-        musicplayer.onDestroy(() =>
-        {
-            this.logger.log(`Removing MusicPlayer for guild ${voicechannel.guild.name} (${guildId}).`);
-            this.activePlayers.delete(musicplayer.guildId);
+        newInstance.addEventListener("destroy", () => {
+            this.logger.log(`Removing VoiceInstance for guild ${voicechannel.guild.name} (${guildId}).`);
+            this.activeVoiceInstances.delete(newInstance.guildId);
         });
 
-        if (!await musicplayer.connectToVoice(voicechannel))
-        {
-            musicplayer.destroy();
+        if (!(await newInstance.connectToVoice(voicechannel))) {
+            newInstance.destroy();
             return;
         }
-        return musicplayer;
+        return newInstance;
     }
 
     /**
-     * Destroy all active players.
+     * Destroy all active voice instances.
      */
-    destroy()
-    {
-        for (const player of this.activePlayers.values())
-        {
-            player.destroy();
+    destroy() {
+        for (const instance of this.activeVoiceInstances.values()) {
+            instance.destroy();
         }
     }
 }

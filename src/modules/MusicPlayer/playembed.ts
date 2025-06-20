@@ -1,7 +1,7 @@
 import { EmbedBuilder } from "discord.js";
 import { Song } from "./Song";
-import { hhmmss } from "../helper";
-import { L } from "../lang/language";
+import { hhmmss } from "../../helper";
+import { L } from "../../lang/language";
 
 export function buildNowPlayingEmbed(song: Song, next?: Song)
 {

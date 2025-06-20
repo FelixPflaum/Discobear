@@ -1,8 +1,8 @@
 import { validate } from "play-dl";
-import { Logger } from "../Logger";
-import { Song } from "../MusicPlayer/Song";
+import { Logger } from "../../../Logger";
+import { Song } from "../Song";
 import * as yt from "./youtube";
-import { L } from "../lang/language";
+import { L } from "../../../lang/language";
 
 type PDLValidationResults = Awaited<ReturnType<typeof validate>>;
 
