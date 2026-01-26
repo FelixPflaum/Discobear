@@ -19,7 +19,7 @@ export class Discordbot {
 
         this.voiceManager = new VoiceManager(this.client);
 
-        this.client.on("ready", () => {
+        this.client.on("clientReady", () => {
             this.logger.log("Logged in and ready.");
             for (const guild of this.client.guilds.cache.values()) {
                 this.refreshCommandsForGuild(guild);

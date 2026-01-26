@@ -40,5 +40,9 @@
     "Playlist exceeds maximum allowed duration!": "Playlist exceeds maximum allowed duration!",
     "No results for: ": "No results for: ",
     "Unable to create stream!": "Unable to create stream!",
-    "Searched for: `{searchterm}`": "Searched for: `{searchterm}`"
+    "Searched for: `{searchterm}`": "Searched for: `{searchterm}`",
+    "Unable to create audio resource!": "Unable to create audio resource!",
+    "Voice connection error!": "Voice connection error!",
+    "Channel to join.": "Channel to join.",
+    "Invalid channel!": "Invalid channel!"
 }

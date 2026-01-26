@@ -3,22 +3,22 @@ import { SongQueue } from "./SongQueue";
 import { Song } from "./Song";
 import { buildNowPlayingEmbed } from "./playembed";
 import { L } from "../../lang/language";
-import Innertube from "youtubei.js";
-import { Readable } from "node:stream";
 import { VoiceBotInstance } from "../../Discordbot/VoiceBotInstance";
+import { YtDlp } from "ytdlp-nodejs";
+import { Readable } from "node:stream";
 
 export class PlayerInstance extends VoiceBotInstance {
     static readonly moduleTypeId = "MusicPlayer";
     private readonly queue: SongQueue;
-    private readonly innerTube: Innertube;
+    private readonly ytdlp: YtDlp;
     private nowPlaying?: { song: Song; startedAt: number };
     private retryCounter = 0;
     private finished = false;
 
-    constructor(guild: Guild, textchannel: TextBasedChannel, innerTube: Innertube) {
+    constructor(guild: Guild, textchannel: TextBasedChannel, ytdlp: YtDlp) {
         super(PlayerInstance.moduleTypeId, guild, textchannel);
         this.queue = new SongQueue();
-        this.innerTube = innerTube;
+        this.ytdlp = ytdlp;
 
         this.addEventListener("playerError", (error) => {
             this.logger.logError("Player error!", error);
@@ -67,15 +67,13 @@ export class PlayerInstance extends VoiceBotInstance {
         let stream: Readable;
 
         try {
-            const videoId = song.url.match(/v=([^^&]+)/)![1]!; // TODO: test
-            const wstream = await this.innerTube.download(videoId, {
-                type: "audio",
-                quality: "best",
-                format: "mp4",
-                client: "IOS",
+            const videoId = song.url.match(/v=([^^&]+)/)![1]!;
+            const wstream = this.ytdlp.stream(videoId, {
+                format: {
+                    filter: "audioonly",
+                },
             });
-            // @ts-expect-error
-            stream = Readable.fromWeb(wstream);
+            stream = wstream.getStream();
         } catch (error) {
             this.sendText(L("Unable to create stream!"));
             this.destroy();

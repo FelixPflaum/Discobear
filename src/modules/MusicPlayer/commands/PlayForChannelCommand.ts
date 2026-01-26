@@ -6,7 +6,7 @@ import type { VoiceManager } from "../../../Discordbot/VoiceManager";
 import { PlayerInstance } from "../PlayerInstance";
 import { hhmmss } from "../../../helper";
 import { L } from "../../../lang/language";
-import Innertube from "youtubei.js/agnostic";
+import { YtDlp } from "ytdlp-nodejs";
 
 interface EnqueueResult {
     isError: boolean;
@@ -15,11 +15,11 @@ interface EnqueueResult {
 
 export class PlayForChannelCommand extends BotCommandBase {
     private readonly voiceManager: VoiceManager;
-    private readonly innerTube: Innertube;
+    private readonly ytdlp: YtDlp;
 
-    constructor(voiceManager: VoiceManager, innerTube: Innertube) {
+    constructor(voiceManager: VoiceManager, ytdlp: YtDlp) {
         super("playex", L("Play or queue music."));
-        this.innerTube = innerTube;
+        this.ytdlp = ytdlp;
         this.voiceManager = voiceManager;
         this.addStringOption("search_or_url", L("Search term or video URL."), 4, 250);
         this.commandBuilder.addChannelOption((opt) =>
@@ -155,7 +155,7 @@ export class PlayForChannelCommand extends BotCommandBase {
         await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
         const player = await this.voiceManager.joinVoice(voicechannel, () => {
-            return new PlayerInstance(voicechannel.guild, textchanel, this.innerTube);
+            return new PlayerInstance(voicechannel.guild, textchanel, this.ytdlp);
         });
 
         if (!player || !PlayerInstance.isInstance(player)) {

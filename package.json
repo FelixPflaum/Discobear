@@ -5,13 +5,13 @@
     "updatelangfiles": "node ./build/src/lang/createFiles.js"
   },
   "dependencies": {
-    "bufferutil": "^4.0.8",
     "@discordjs/opus": "^0.10.0",
     "@discordjs/voice": "^0.18.0",
-    "discord.js": "^14.20.0",
+    "bufferutil": "^4.0.8",
+    "discord.js": "^14.25.1",
     "play-dl": "^1.9.7",
     "typescript": "^5.3.3",
-    "youtubei.js": "^14.0.0",
+    "ytdlp-nodejs": "^3.4.1",
     "zlib-sync": "^0.1.10"
   },
   "devDependencies": {

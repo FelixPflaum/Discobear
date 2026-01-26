@@ -9,7 +9,6 @@ interface IConfigFile
     playListMaxDuration: number,
     language: string,
     youtubeCookie: string,
-    useragent: string,
     extraCommands: string[],
 }
 
@@ -20,7 +19,6 @@ const data: IConfigFile = {
     playListMaxDuration: 3600 * 5,
     language: "en",
     youtubeCookie: "",
-    useragent: "",
     extraCommands: [],
 }
 
