@@ -1,15 +1,14 @@
 import { readFileSync, existsSync, writeFileSync } from "fs";
 import { Logger } from "./Logger";
 
-interface IConfigFile
-{
-    discordToken: string,
-    videoMaxDuration: number,
-    playListMaxSize: number,
-    playListMaxDuration: number,
-    language: string,
-    youtubeCookie: string,
-    extraCommands: string[],
+interface IConfigFile {
+    discordToken: string;
+    videoMaxDuration: number;
+    playListMaxSize: number;
+    playListMaxDuration: number;
+    language: string;
+    youtubeCookie: string;
+    extraCommands: string[];
 }
 
 const data: IConfigFile = {
@@ -20,38 +19,41 @@ const data: IConfigFile = {
     language: "en",
     youtubeCookie: "",
     extraCommands: [],
-}
+};
 
-const fileName = "config.json";
+const fileName = (() => {
+    const paramName = "cfg=";
+    for (const arg of process.argv) {
+        if (arg.startsWith(paramName)) {
+            const fname = arg.substring(paramName.length);
+            return fname.trim();
+        }
+    }
+    return "config.json";
+})();
 const logger = new Logger("Configfile");
 let loaded = false;
 
 /**
  * Write config file.
  */
-function safeConfigFile()
-{
+function safeConfigFile() {
     writeFileSync(fileName, JSON.stringify(data, null, 4));
 }
 
 /**
  * Read config file. Ends process if file can't be read or parsed for whatever reason.
- * @returns 
+ * @returns
  */
-function readConfigFile()
-{
-    try
-    {
+function readConfigFile() {
+    try {
         const parsed = JSON.parse(readFileSync(fileName, "utf-8"));
-        if (typeof parsed !== "object")
-        {
+        if (typeof parsed !== "object") {
             logger.logError("Config file is malformed!");
             process.exit(1);
         }
         return <{ [index: string]: any }>parsed;
-    }
-    catch (error)
-    {
+    } catch (error) {
         logger.logError("Error while reading config file!", error);
         process.exit(1);
     }
@@ -59,24 +61,19 @@ function readConfigFile()
 
 /**
  * Update settings data with file data.
- * @param fileData 
+ * @param fileData
  * @returns List of settings that were missing from file data.
  */
-function updateSettings(fileData: { [index: string]: any })
-{
+function updateSettings(fileData: { [index: string]: any }) {
     const newSettings: string[] = [];
 
     let setting: keyof IConfigFile;
-    for (setting in data)
-    {
+    for (setting in data) {
         const fromFile = fileData[setting];
-        if (fromFile && typeof fromFile === typeof data[setting])
-        {
+        if (fromFile && typeof fromFile === typeof data[setting]) {
             // @ts-ignore
             data[setting] = fromFile;
-        }
-        else
-        {
+        } else {
             newSettings.push(setting);
         }
     }
@@ -87,12 +84,10 @@ function updateSettings(fileData: { [index: string]: any })
 /**
  * Attempt to load config data from file. Process will end if data is missing or can't be read.
  */
-function loadConfigData()
-{
+function loadConfigData() {
     logger.log("Trying to load file (" + fileName + ")...");
 
-    if (!existsSync(fileName))
-    {
+    if (!existsSync(fileName)) {
         safeConfigFile();
         logger.log("New config file created! Edit settings and start again.");
         process.exit(0);
@@ -100,12 +95,10 @@ function loadConfigData()
 
     const newSettings = updateSettings(readConfigFile());
 
-    if (newSettings.length > 0)
-    {
+    if (newSettings.length > 0) {
         safeConfigFile();
         logger.log(`Following ${newSettings.length} new settings were added to config file (${fileName}):`);
-        for (const setting of newSettings)
-        {
+        for (const setting of newSettings) {
             logger.log(setting);
         }
         logger.log("Adjust these settings if needed and start again.");
@@ -120,8 +113,7 @@ function loadConfigData()
  * Get settings from config file.
  * @returns Config file data.
  */
-export function getConfig()
-{
+export function getConfig() {
     if (!loaded) loadConfigData();
     return <Readonly<IConfigFile>>data;
 }
