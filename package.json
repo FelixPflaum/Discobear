@@ -11,7 +11,7 @@
     "discord.js": "^14.25.1",
     "play-dl": "^1.9.7",
     "typescript": "^5.3.3",
-    "ytdlp-nodejs": "^3.4.1",
+    "ytdlp-nodejs": "^3.4.4",
     "zlib-sync": "^0.1.10"
   },
   "devDependencies": {
