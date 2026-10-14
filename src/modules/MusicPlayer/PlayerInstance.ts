@@ -4,8 +4,8 @@ import { Song } from "./Song";
 import { buildNowPlayingEmbed } from "./playembed";
 import { L } from "../../lang/language";
 import { VoiceBotInstance } from "../../Discordbot/VoiceBotInstance";
-import { YtDlp } from "ytdlp-nodejs";
-import { Readable } from "node:stream";
+import { Stream, YtDlp } from "ytdlp-nodejs";
+import { createAudioResource, StreamType } from "@discordjs/voice";
 
 export class PlayerInstance extends VoiceBotInstance {
     static readonly moduleTypeId = "MusicPlayer";
@@ -64,16 +64,14 @@ export class PlayerInstance extends VoiceBotInstance {
      * @returns
      */
     private async playSong(song: Song) {
-        let stream: Readable;
+        let stream: Stream;
 
         try {
-            const videoId = song.url.match(/v=([^^&]+)/)![1]!;
-            const wstream = this.ytdlp.stream(videoId, {
-                format: {
-                    filter: "audioonly",
-                },
+            //const videoId = song.url.match(/v=([^^&]+)/)![1]!;
+            stream = this.ytdlp.stream(song.url, {
+                format: { filter: "audioonly" },
             });
-            stream = wstream.getStream();
+            stream.on("error", (err) => console.error("yt-dlp stream error:", err));
         } catch (error) {
             this.sendText(L("Unable to create stream!"));
             this.destroy();
@@ -81,7 +79,19 @@ export class PlayerInstance extends VoiceBotInstance {
             return;
         }
 
-        this.playStream(stream);
+        try {
+            // ytdlp stream has type mismatch but will work
+            // @ts-expect-error
+            const resource = createAudioResource(stream, {
+                inputType: StreamType.Arbitrary,
+            });
+            this.playStream(resource);
+        } catch (error) {
+            this.sendText(L("Unable to create audio resource!"));
+            this.destroy();
+            this.logger.logError("Error on creating AudioResource", error);
+            return;
+        }
 
         this.nowPlaying = {
             song: song,

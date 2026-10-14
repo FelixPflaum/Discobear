@@ -4,8 +4,8 @@ import {
     AudioPlayer,
     AudioPlayerError,
     AudioPlayerStatus,
+    AudioResource,
     createAudioPlayer,
-    createAudioResource,
     entersState,
     getVoiceConnection,
     joinVoiceChannel,
@@ -13,7 +13,6 @@ import {
     VoiceConnectionStatus,
 } from "@discordjs/voice";
 import { L } from "../lang/language";
-import { Readable } from "node:stream";
 
 type VoiceBotInstanceEvents = {
     destroy: (() => void)[];
@@ -195,7 +194,7 @@ export class VoiceBotInstance {
      * @param stream
      * @returns
      */
-    async playStream(stream: Readable) {
+    async playStream(audio: AudioResource) {
         const connection = getVoiceConnection(this.guildId);
         if (!connection) {
             this.sendText(L("Voice connection lost!"));
@@ -204,7 +203,6 @@ export class VoiceBotInstance {
         }
 
         try {
-            const audio = createAudioResource(stream);
             this.audioPlayer.play(audio);
         } catch (error) {
             this.sendText(L("Unable to create audio resource!"));
@@ -269,7 +267,7 @@ export class VoiceBotInstance {
         this.updateChannel(voicechannel);
 
         try {
-            await entersState(connection, VoiceConnectionStatus.Ready, 5000);
+            await entersState(connection, VoiceConnectionStatus.Ready, LEAVE_DELAY[LeaveReason.ConnectionTimeout]);
         } catch (error) {
             return false;
         }
