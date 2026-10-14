@@ -21,6 +21,36 @@ export class Discordbot {
 
         this.client.on("clientReady", () => {
             this.logger.log("Logged in and ready.");
+
+            if (process.argv.includes("listguilds")) {
+                const guilds = [...this.client.guilds.cache.values()];
+                this.logger.log(`Joined ${guilds.length} guild(s):`);
+                for (const guild of guilds) {
+                    this.logger.log(`- ${guild.name} (${guild.id})`);
+                }
+                process.exit(0);
+            }
+
+            const leaveIdx = process.argv.indexOf("leaveguild");
+            if (leaveIdx !== -1) {
+                const guildId = process.argv[leaveIdx + 1];
+                const guild = guildId ? this.client.guilds.cache.get(guildId) : undefined;
+                if (!guild) {
+                    this.logger.logError(
+                        guildId
+                            ? `Guild ${guildId} not found in the guild cache!`
+                            : "Missing guild Id! Usage: node <script> leaveguild <guildId>"
+                    );
+                    process.exit(1);
+                }
+                this.logger.log(`Leaving guild ${guild.name} (${guild.id})...`);
+                guild.leave().then(() => {
+                    this.logger.log(`Left guild ${guild.name} (${guild.id}).`);
+                    process.exit(0);
+                });
+                return;
+            }
+
             for (const guild of this.client.guilds.cache.values()) {
                 this.refreshCommandsForGuild(guild);
             }
